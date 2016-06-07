@@ -64,11 +64,11 @@ def parse_movie(movie):
 
         for cat in movie['cats'].split('#'):
             sql = "insert into category values(%s, %s, %s)"
-            cursor.execute(sql, (int(cat), int(movie['id']), ''))
+            cursor.execute(sql, (int(cat), int(movie['id']), 0))
 
         for rec in movie_data['recommend']:
             sql = "insert into recommend values(%s, %s)"
-            cursor.execute(sql, (int(rec), int(movie['id']), 0))
+            cursor.execute(sql, (int(rec), int(movie['id'])))
 
 
 @c.task
@@ -189,6 +189,13 @@ def run():
     trailers = response.json()
     for trailer in trailers:
         parse_trailer.delay(trailer)
+
+    cates = json.loads(zf.read('cats.json'))
+
+    with Transaction(db) as cursor:
+        for i, name in cates.items():
+            sql = "insert into category_trans(id, text_name) values(%s, %s)"
+            cursor.execute(sql, (int(i), name))
 
 
 if __name__ == '__main__':
