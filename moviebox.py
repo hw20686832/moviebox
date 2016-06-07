@@ -64,7 +64,8 @@ def parse_movie(movie):
 
         for cat in movie['cats'].split('#'):
             sql = "insert into category values(%s, %s, %s)"
-            cursor.execute(sql, (int(cat), int(movie['id']), 0))
+            if cat:
+                cursor.execute(sql, (int(cat), int(movie['id']), 0))
 
         for rec in movie_data['recommend']:
             sql = "insert into recommend values(%s, %s)"
@@ -132,7 +133,8 @@ def parse_tv(tv):
 
         for cat in tv['cats'].split('#'):
             sql = "insert into category values(%s, %s, %s)"
-            cursor.execute(sql, (int(cat), int(tv['id']), 2))
+            if cat:
+                cursor.execute(sql, (int(cat), int(tv['id']), 2))
 
 
 @c.task
@@ -159,7 +161,8 @@ def parse_trailer(trailer):
 
         for cat in trailer_data['cats'].split('#'):
             sql = "insert into category values(%s, %s, %s)"
-            cursor.execute(sql, (int(cat), int(trailer['id']), 1))
+            if cat:
+                cursor.execute(sql, (int(cat), int(trailer['id']), 1))
 
 
 def run():
