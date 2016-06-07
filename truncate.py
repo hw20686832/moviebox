@@ -18,11 +18,9 @@ def truncate(*tables):
 
 
 if __name__ == '__main__':
-    try:
-        tables = sys.argv[1:]
-    except:
-        tables = ['category', 'category_trans', 'movie',
+    arg_tables = sys.argv[1:]
+    all_tables = ['category', 'category_trans', 'movie',
                   'recommend', 'trailer', 'trailer_source',
                   'tv', 'tv_episode', 'tv_season']
 
-    truncate(*tables)
+    truncate(*(arg_tables or all_tables))
