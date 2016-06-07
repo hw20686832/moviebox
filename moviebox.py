@@ -66,7 +66,7 @@ def parse_movie(movie):
             sql = "insert into category values(%s, %s, %s)"
             cursor.execute(sql, (int(cat), int(movie['id']), ''))
 
-        for rec in movie['recommend']:
+        for rec in movie_data['recommend']:
             sql = "insert into recommend values(%s, %s)"
             cursor.execute(sql, (int(rec), int(movie['id']), 0))
 
