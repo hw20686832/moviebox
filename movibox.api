@@ -1,0 +1,117 @@
+## All List ##
+GET http://sbfunapi.cc/data/data_en.zip?q=-553674870 HTTP/1.1
+User-Agent: Dalvik/2.1.0 (Linux; U; Android 6.0; Nexus 5 Build/MPA44G)
+Host: sbfunapi.cc
+Connection: Keep-Alive
+Accept-Encoding: gzip
+
+
+HTTP/1.1 200 OK
+Server: nginx
+Date: Fri, 03 Jun 2016 09:48:39 GMT
+Content-Type: application/zip
+Content-Length: 293264
+Last-Modified: Fri, 03 Jun 2016 09:32:14 GMT
+Connection: keep-alive
+Keep-Alive: timeout=65
+ETag: "57514e9e-47990"
+Expires: Sun, 03 Jul 2016 09:48:39 GMT
+Cache-Control: max-age=2592000
+Accept-Ranges: bytes
+
+
+## Movie Detail ##
+GET http://sbfunapi.cc/api/serials/movie_details/?id=5390 HTTP/1.1
+Host: sbfunapi.cc
+Connection: Keep-Alive
+User-Agent: Show Box
+Accept-Encoding: gzip
+
+
+HTTP/1.1 200 OK
+Server: nginx
+Date: Fri, 03 Jun 2016 10:01:43 GMT
+Content-Type: text/json;charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Keep-Alive: timeout=65
+
+{"description":"Political interference in the Avengers' activities causes a rift between former allies Captain America and Iron Man.","poster":"http:\/\/ia.media-imdb.com\/images\/M\/MV5BMjQ0MTgyNjAxMV5BMl5BanBnXkFtZTgwNjUzMDkyODE@._V1_SX700.jpg","trailer":"uVdV-lxRPFo","imdb_rating":"8.2","langs":[{"id":5390,"lang":"en","sources":[{"type":1,"hash":"G4n+eBfeHYeqfZ2fGrMFrKmtx6sjOIh9jToXA3e+Jxg="},{"type":8,"data":["K2BLFYj+UtocPXwJODGP6HCjY2fo47fDJhyUc4BvYnA4+6c2jzgSPyhe0G6+js121\/h8OB\/XWqJkVS8sTzP3pUeuyhjEk4pfu9CIqZodmR4vWbaqYZWtIZ\/o999HwFmpq1lg+3rgxa4nt61+iI07Qg==","K2BLFYj+UtocPXwJODGP6Hd1IfED9Wkbh6ZmNlUaLXEOL21gMMJFgkiXJabVDYBh2L4Dgu4TNhyBr1sHuvGFzFTFvPLifpxU1S6Le+MEM8e2IB8tXllWY1C7gYoE669zq1lg+3rgxa4nt61+iI07Qg==","K2BLFYj+UtocPXwJODGP6Hd1IfED9Wkbh6ZmNlUaLXE0+5RoorDGrlfK+2uWhviwQLGDTg+7MQbt8yIoo7Il9gyD\/gOup9ZP17XwlFAM3Zgl8JCKMB3UzRr27FycFIvAq1lg+3rgxa4nt61+iI07Qg==","K2BLFYj+UtocPXwJODGP6Hd1IfED9Wkbh6ZmNlUaLXGez6YfFtUMBaLfV+32NtgovsYh9Nwlt+cFHXlGrByT8YnkXUzu0DFMxBgc68GEfpGJsS\/JEfH4cQrFAZC7xy\/+q1lg+3rgxa4nt61+iI07Qg==","K2BLFYj+UtocPXwJODGP6Hd1IfED9Wkbh6ZmNlUaLXG8+zK6y7kFz5Kop4TX4nEt7fcQzMukvpl9p4L6xylceDH2ecTwuKGtKQte6fbXQY9DsKC0ztn2uZFpz1B\/VtFNq1lg+3rgxa4nt61+iI07Qg==","K2BLFYj+UtocPXwJODGP6HCjY2fo47fDJhyUc4BvYnASHtyqgI5MNgZIoBtr5kJJQM+q7\/gQ1wTci15DN1eTKxJlXGdykb+QZ0oocQ2rL6pceHFgXyA33k7Duly6AsUkq1lg+3rgxa4nt61+iI07Qg==","K2BLFYj+UtocPXwJODGP6HCjY2fo47fDJhyUc4BvYnCrhuz6P8tX7QDC6XaaFXSbpPYqTZ7a\/LKls\/oQsu\/zI1ilLkc3kFreL1Knqv6rZwp2xiacq8quzPP9q3xX8z0\/q1lg+3rgxa4nt61+iI07Qg=="]}]}],"recommend":["3321","66","2601","158","4212","5307","14","577","4993","4691","3607","5372"]}
+
+
+## TV Detail ##
+GET http://sbfunapi.cc/api/serials/es/?season=6&id=23 HTTP/1.1
+Host: sbfunapi.cc
+Connection: Keep-Alive
+User-Agent: Show Box
+Accept-Encoding: gzip
+
+
+HTTP/1.1 200 OK
+Server: nginx
+Date: Fri, 03 Jun 2016 10:06:08 GMT
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Keep-Alive: timeout=65
+Content-Encoding: gzip
+
+
+## TV Season Detail ##
+GET http://sbfunapi.cc/api/serials/es/?season=6&id=23 HTTP/1.1
+Host: sbfunapi.cc
+Connection: Keep-Alive
+User-Agent: Show Box
+Accept-Encoding: gzip
+
+
+HTTP/1.1 200 OK
+Server: nginx
+Date: Mon, 06 Jun 2016 05:17:15 GMT
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Keep-Alive: timeout=65
+Content-Encoding: gzip
+
+
+##  Trailer List  ##
+GET http://sbfunapi.cc/api/serials/trailers_movies/?feed=popular HTTP/1.1
+Host: sbfunapi.cc
+Connection: keep-alive
+Accept: */*
+User-Agent: MovieBox3/3.6.4 (iPhone; iOS 9.3.2; Scale/2.00)
+Accept-Language: zh-Hans-CN;q=1, en-CN;q=0.9
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+
+
+HTTP/1.1 200 OK
+Server: nginx
+Date: Mon, 06 Jun 2016 07:36:35 GMT
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Keep-Alive: timeout=65
+Content-Encoding: gzip
+
+
+##  Trailer Detail  ##
+GET http://sbfunapi.cc/api/serials/trailers/?id=53 HTTP/1.1
+Host: sbfunapi.cc
+Connection: keep-alive
+Accept: */*
+User-Agent: MovieBox3/3.6.4 (iPhone; iOS 9.3.2; Scale/2.00)
+Accept-Language: zh-Hans-CN;q=1, en-CN;q=0.9
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+
+
+HTTP/1.1 200 OK
+Server: nginx
+Date: Mon, 06 Jun 2016 07:38:24 GMT
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Keep-Alive: timeout=65
+Content-Encoding: gzip
