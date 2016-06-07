@@ -63,7 +63,7 @@ def parse_movie(movie):
         cursor.execute(sql, movie_data)
 
         for cat in movie['cats'].split('#'):
-            sql = "insert into category values(%s, %s, %s)"
+            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
             if cat:
                 cursor.execute(sql, (int(cat), int(movie['id']), 0))
 
@@ -75,7 +75,7 @@ def parse_movie(movie):
 @c.task
 def parse_tv(tv):
     with Transaction(db) as cursor:
-        for i in range(1, int(tv['seasons'])+1):
+        for i in range(1, int(tv.get('seasons', 1))+1):
             response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
                                     headers=headers)
             season = response.json()
@@ -132,7 +132,7 @@ def parse_tv(tv):
         cursor.execute(sql, tv_data)
 
         for cat in tv['cats'].split('#'):
-            sql = "insert into category values(%s, %s, %s)"
+            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
             if cat:
                 cursor.execute(sql, (int(cat), int(tv['id']), 2))
 
@@ -167,7 +167,7 @@ def parse_trailer(trailer):
         cursor.execute(sql, trailer)
 
         for cat in trailer_data['cats'].split('#'):
-            sql = "insert into category values(%s, %s, %s)"
+            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
             if cat:
                 cursor.execute(sql, (int(cat), int(trailer['id']), 1))
 
