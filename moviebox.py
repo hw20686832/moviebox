@@ -139,6 +139,13 @@ def parse_tv(tv):
 
 @c.task
 def parse_trailer(trailer):
+    headers = {"Host": "sbfunapi.cc",
+               "Connection": "keep-alive",
+               "Accept": "*/*",
+               "User-Agent": "MovieBox3/3.6.4 (iPhone; iOS 9.3.2; Scale/2.00)",
+               "Accept-Language": "zh-Hans-CN;q=1, en-CN;q=0.9",
+               "Accept-Encoding": "gzip, deflate",
+               "Connection": "keep-alive"}
     response = requests.get(TRAILER_DETAIL_URL % trailer['id'],
                             headers=headers)
     trailer_data = response.json()
@@ -174,11 +181,13 @@ def run():
     movies = json.loads(movies_lite)
     for m in movies:
         parse_movie.delay(m)
+    print("Movie count %d" % len(movies))
 
     tv_lite = zf.read('tv_lite.json')
     tv = json.loads(tv_lite)
     for t in tv:
         parse_tv.delay(t)
+    print("TV count %d" % len(tv))
 
     headers = {"Host": "sbfunapi.cc",
                "Connection": "keep-alive",
@@ -192,14 +201,15 @@ def run():
     trailers = response.json()
     for trailer in trailers:
         parse_trailer.delay(trailer)
+    print("Trailer count %d" % len(trailers))
 
     cates = json.loads(zf.read('cats.json'))
-
     with Transaction(db) as cursor:
         for i, name in cates.items():
             sql = "insert into category_trans(id, text_name) values(%s, %s)"
             cursor.execute(sql, (int(i), name))
 
+    zf.close()
 
 if __name__ == '__main__':
     run()
