@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import os
 
+import MySQLdb
 import celery
 from boto.s3.connection import S3Connection
 import youtube_dl
@@ -32,3 +33,8 @@ def download(vid):
 
 
 if __name__ == '__main__':
+    cursor = db.cursor()
+    cursor.execute("select link from trailer_source")
+    data = cursor.fetch_all()
+    for link, in data:
+        download.delay(link)
