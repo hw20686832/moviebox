@@ -9,7 +9,7 @@ from boto.s3.connection import S3Connection
 import youtube_dl
 
 conn = S3Connection()
-bucket = conn.get_bucket('moviebox')
+bucket = conn.get_bucket('androidpackage')
 db = MySQLdb.connect(host='192.168.2.20', user='moviebox',
                      passwd='moviebox', db='moviebox')
 
