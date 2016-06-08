@@ -1,4 +1,5 @@
 # coding:utf-8
+import os
 import json
 import random
 import zipfile
@@ -7,9 +8,10 @@ import StringIO
 import celery
 import requests
 import MySQLdb
+import youtube_dl
+from boto.s3.connection import S3Connection
 
 import settings
-from video_dl import download
 
 
 LIST_URL = "http://sbfunapi.cc/data/data_en.zip?q=%s"
@@ -18,10 +20,11 @@ TRAILER_DETAIL_URL = "http://sbfunapi.cc/api/serials/trailers/?id=%s"
 MOVIE_DETAIL_URL = "http://sbfunapi.cc/api/serials/movie_details/?id=%s"
 TV_DETAIL_URL = "http://sbfunapi.cc/api/serials/es/?season=%s&id=%s"
 
-
+conn = S3Connection()
+bucket = conn.get_bucket('androidpackage')
 db = MySQLdb.connect(**settings.MYSQL_CONF)
 
-c = celery.Celery("moviebox", broker="redis://:appvvcom@192.168.2.20/1")
+c = celery.Celery("moviebox", broker="redis://:%(password)s@%(host)s:%(port)d/%(db)d" % settings.REDIS_CONF)
 
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
            "Host": "sbfunapi.cc", "Connection": "Keep-Alive"}
@@ -160,8 +163,7 @@ def parse_trailer(trailer):
                        values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
             cursor.execute(sql, t)
             # The link is Youtube video ID, put it into download queue.
-            # Download task queue based on celery yet.
-            download.delay(t['link'])
+            download_video.delay(t['link'])
 
         sql = """insert into trailer(
                    id, title, description, poster, rating,
@@ -176,6 +178,23 @@ def parse_trailer(trailer):
             sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
             if cat:
                 cursor.execute(sql, (int(cat), int(trailer['id']), 1))
+
+
+@c.task
+def download_video(vid):
+    """Download Video from youtube"""
+    opts = {
+        'format': 'mp4',
+        'outtmpl': "tmp/%(id)s.%(ext)s",
+    }
+    with youtube_dl.YoutubeDL(opts) as ydl:
+        ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
+
+    key = bucket.new_key("video/trailer/%s.mp4" % vid)
+    key.set_contents_from_filename("tmp/%s.mp4" % vid)
+    key.close()
+
+    os.remove("tmp/%s.mp4" % vid)
 
 
 def run():
