@@ -161,7 +161,7 @@ def parse_trailer(trailer):
             cursor.execute(sql, t)
             # The link is Youtube video ID, put it into download queue.
             # Download task queue based on celery yet.
-            download.apply_async((t['link'], ))
+            download.delay(t['link'])
 
         sql = """insert into trailer(
                    id, title, description, poster, rating,
