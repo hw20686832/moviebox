@@ -89,8 +89,8 @@ def parse_tv(tv):
             season_data['description'] = season['description']
 
             sql = """insert into tv_season(
-                       tv_id, banner, description)
-                     values(%(tv_id)s, %(banner)s, %(description)s)
+                       tv_id, banner, description, seq)
+                     values(%(tv_id)s, %(banner)s, %(description)s, %(seq)s)
                   """
             season_id = cursor.execute(sql, season_data)
 
