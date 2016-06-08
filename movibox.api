@@ -1,11 +1,12 @@
 ## All List ##
+# Request
 GET http://sbfunapi.cc/data/data_en.zip?q=-553674870 HTTP/1.1
 User-Agent: Dalvik/2.1.0 (Linux; U; Android 6.0; Nexus 5 Build/MPA44G)
 Host: sbfunapi.cc
 Connection: Keep-Alive
 Accept-Encoding: gzip
 
-
+# Response
 HTTP/1.1 200 OK
 Server: nginx
 Date: Fri, 03 Jun 2016 09:48:39 GMT
@@ -21,13 +22,14 @@ Accept-Ranges: bytes
 
 
 ## Movie Detail ##
+# Request
 GET http://sbfunapi.cc/api/serials/movie_details/?id=5390 HTTP/1.1
 Host: sbfunapi.cc
 Connection: Keep-Alive
 User-Agent: Show Box
 Accept-Encoding: gzip
 
-
+# Response
 HTTP/1.1 200 OK
 Server: nginx
 Date: Fri, 03 Jun 2016 10:01:43 GMT
@@ -40,13 +42,14 @@ Keep-Alive: timeout=65
 
 
 ## TV Detail ##
+# Request
 GET http://sbfunapi.cc/api/serials/es/?season=6&id=23 HTTP/1.1
 Host: sbfunapi.cc
 Connection: Keep-Alive
 User-Agent: Show Box
 Accept-Encoding: gzip
 
-
+# Response
 HTTP/1.1 200 OK
 Server: nginx
 Date: Fri, 03 Jun 2016 10:06:08 GMT
@@ -58,13 +61,14 @@ Content-Encoding: gzip
 
 
 ## TV Season Detail ##
+# Request
 GET http://sbfunapi.cc/api/serials/es/?season=6&id=23 HTTP/1.1
 Host: sbfunapi.cc
 Connection: Keep-Alive
 User-Agent: Show Box
 Accept-Encoding: gzip
 
-
+# Response
 HTTP/1.1 200 OK
 Server: nginx
 Date: Mon, 06 Jun 2016 05:17:15 GMT
@@ -76,6 +80,7 @@ Content-Encoding: gzip
 
 
 ##  Trailer List  ##
+# Request
 GET http://sbfunapi.cc/api/serials/trailers_movies/?feed=popular HTTP/1.1
 Host: sbfunapi.cc
 Connection: keep-alive
@@ -85,7 +90,7 @@ Accept-Language: zh-Hans-CN;q=1, en-CN;q=0.9
 Accept-Encoding: gzip, deflate
 Connection: keep-alive
 
-
+# Response
 HTTP/1.1 200 OK
 Server: nginx
 Date: Mon, 06 Jun 2016 07:36:35 GMT
@@ -97,6 +102,7 @@ Content-Encoding: gzip
 
 
 ##  Trailer Detail  ##
+# Request
 GET http://sbfunapi.cc/api/serials/trailers/?id=53 HTTP/1.1
 Host: sbfunapi.cc
 Connection: keep-alive
@@ -106,7 +112,7 @@ Accept-Language: zh-Hans-CN;q=1, en-CN;q=0.9
 Accept-Encoding: gzip, deflate
 Connection: keep-alive
 
-
+# Response
 HTTP/1.1 200 OK
 Server: nginx
 Date: Mon, 06 Jun 2016 07:38:24 GMT

@@ -8,6 +8,8 @@ import celery
 import requests
 import MySQLdb
 
+from video_dl import download
+
 
 LIST_URL = "http://sbfunapi.cc/data/data_en.zip?q=%s"
 TRAILERS_LIST_URL = "http://sbfunapi.cc/api/serials/trailers_movies/?feed=popular"
@@ -18,7 +20,7 @@ TV_DETAIL_URL = "http://sbfunapi.cc/api/serials/es/?season=%s&id=%s"
 
 db = MySQLdb.connect(host='192.168.2.20', user='moviebox',
                      passwd='moviebox', db='moviebox')
-c = celery.Celery("moviebox", broker="redis://192.168.2.20/1")
+c = celery.Celery("moviebox", broker="redis://:appvvcom@192.168.2.20/1")
 
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
            "Host": "sbfunapi.cc", "Connection": "Keep-Alive"}
@@ -48,7 +50,7 @@ def parse_movie(movie):
     movie_data['id'] = int(movie['id'])
     movie_data['title'] = movie['title']
     movie_data['imdb_id'] = movie['imdb_id']
-    movie_data['rating'] = movie['rating']
+    movie_data['rating'] = int(movie['rating'] or 0)
     movie_data['year'] = movie['year']
     movie_data['is_deleted'] = False
 
@@ -117,7 +119,7 @@ def parse_tv(tv):
         tv_data['title'] = tv['title']
         tv_data['description'] = ''
         tv_data['poster'] = tv['poster']
-        tv_data['rating'] = tv['rating']
+        tv_data['rating'] = int(tv['rating'] or 0)
         tv_data['banner'] = tv['banner']
         tv_data['banner_mini'] = tv['banner_mini']
         tv_data['imdb_id'] = tv['imdb_id']
@@ -156,6 +158,9 @@ def parse_trailer(trailer):
             sql = """insert into trailer_source(id, trailer_id, create_date, link)
                        values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
             cursor.execute(sql, t)
+            # The link is Youtube video ID, put it into download queue.
+            # Download task queue based on celery yet.
+            download.apply_async((t['link'], ))
 
         sql = """insert into trailer(
                    id, title, description, poster, rating,
