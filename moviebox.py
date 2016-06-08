@@ -164,7 +164,7 @@ def parse_trailer(trailer):
                        values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
             cursor.execute(sql, t)
             # The link is Youtube video ID, put it into download queue.
-            download_video.delay(t['link'])
+            #download_video.delay(t['link'])
 
         sql = """insert into trailer(
                    id, title, description, poster, rating,
