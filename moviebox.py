@@ -96,7 +96,8 @@ def parse_tv(tv):
                        tv_id, banner, description, seq)
                      values(%(tv_id)s, %(banner)s, %(description)s, %(seq)s)
                   """
-            season_id = cursor.execute(sql, season_data)
+            cursor.execute(sql, season_data)
+            season_id = cursor.lastrowid
 
             n = 1
             for seq, pic in season['thumbs'].iteritems():
