@@ -4,7 +4,7 @@ MYSQL_CONF = {
     'port': 3306,
     'user': 'moviebox',
     'passwd': 'moviebox',
-    'db': 'moviebox_new'
+    'db': 'moviebox'
 }
 
 REDIS_CONF = {
