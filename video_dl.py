@@ -12,7 +12,7 @@ bucket = conn.get_bucket('moviebox')
 db = MySQLdb.connect(host='192.168.2.20', user='moviebox',
                      passwd='moviebox', db='moviebox')
 
-c = celery.Celery("video_dl", broker="redis://:appvvcom@192.168.2.20/3")
+c = celery.Celery("video_dl", broker="redis://:appvvcom@192.168.2.20/2")
 
 
 @c.task
