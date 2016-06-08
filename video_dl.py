@@ -8,10 +8,11 @@ import celery
 from boto.s3.connection import S3Connection
 import youtube_dl
 
+import settings
+
 conn = S3Connection()
 bucket = conn.get_bucket('androidpackage')
-db = MySQLdb.connect(host='192.168.2.20', user='moviebox',
-                     passwd='moviebox', db='moviebox')
+db = MySQLdb.connect(**settings.MYSQL_CONF)
 
 c = celery.Celery("video_dl", broker="redis://:appvvcom@192.168.2.20/2")
 

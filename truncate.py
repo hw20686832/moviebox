@@ -4,9 +4,10 @@ import sys
 
 import MySQLdb
 
+import settings
 
-db = MySQLdb.connect(host='192.168.2.20', user='moviebox',
-                     passwd='moviebox', db='moviebox')
+
+db = MySQLdb.connect(**settings.MYSQL_CONF)
 
 
 def truncate(*tables):

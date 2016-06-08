@@ -8,6 +8,7 @@ import celery
 import requests
 import MySQLdb
 
+import settings
 from video_dl import download
 
 
@@ -18,8 +19,8 @@ MOVIE_DETAIL_URL = "http://sbfunapi.cc/api/serials/movie_details/?id=%s"
 TV_DETAIL_URL = "http://sbfunapi.cc/api/serials/es/?season=%s&id=%s"
 
 
-db = MySQLdb.connect(host='192.168.2.20', user='moviebox',
-                     passwd='moviebox', db='moviebox')
+db = MySQLdb.connect(**settings.MYSQL_CONF)
+
 c = celery.Celery("moviebox", broker="redis://:appvvcom@192.168.2.20/1")
 
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
