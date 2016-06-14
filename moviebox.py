@@ -49,6 +49,10 @@ class Transaction(object):
 
 @c.task
 def parse_movie(movie):
+    cursor = db.cursor()
+    cursor.execute("select id from movie where id = %s", movie['id'])
+    if cursor.fetchall():
+        return "exists."
     response = requests.get(MOVIE_DETAIL_URL % movie['id'], headers=headers)
     movie_data = response.json()
     movie_data['id'] = int(movie['id'])
@@ -66,16 +70,32 @@ def parse_movie(movie):
                  %(id)s, %(title)s, %(description)s, \
                  %(year)s, %(poster)s, %(rating)s, \
                  %(imdb_id)s, %(imdb_rating)s, %(is_deleted)s)"
-        cursor.execute(sql, movie_data)
 
-        for cat in movie['cats'].split('#'):
-            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
-            if cat:
-                cursor.execute(sql, (int(cat), int(movie['id']), 0))
+        try:
+            cursor.execute(sql, movie_data)
+        except db.IntegrityError as e:
+            if e[0] != 1062:
+                raise e
 
-        for rec in movie_data['recommend']:
-            sql = "insert into recommend values(%s, %s)"
-            cursor.execute(sql, (int(rec), int(movie['id'])))
+            _sql = """update movie set
+                        description = %(description)s,
+                        title = %(title)s,
+                        year = %(year)s,
+                        rating = %(rating)s,
+                        poster = %(poster)s,
+                        imdb_rating = %(imdb_rating)s
+                      where id = %(id)s
+                   """
+            cursor.execute(_sql, movie_data)
+        else:
+            for cat in movie['cats'].split('#'):
+                sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
+                if cat:
+                    cursor.execute(sql, (int(cat), int(movie['id']), 0))
+
+            for rec in movie_data['recommend']:
+                sql = "insert into recommend values(%s, %s)"
+                cursor.execute(sql, (int(rec), int(movie['id'])))
 
 
 @c.task
@@ -96,8 +116,27 @@ def parse_tv(tv):
                        tv_id, banner, description, seq)
                      values(%(tv_id)s, %(banner)s, %(description)s, %(seq)s)
                   """
-            cursor.execute(sql, season_data)
-            season_id = cursor.lastrowid
+            try:
+                cursor.execute(sql, season_data)
+            except db.IntegrityError as e:
+                if e[0] != 1062:
+                    raise e
+
+                _sql = """update tv_season
+                            set banner = %s,
+                            set description = %s
+                          where tv_id = %s and seq = %s
+                       """
+                cursor.execute(_sql, season_data)
+
+                _sql = """select id from tv_seson
+                         where tv_id = %(tv_id)s and seq = %(seq)s
+                      """
+                cursor.execute(_sql, season_data)
+                _data = cursor.fetchone()
+                season_id = _data[0]
+            else:
+                season_id = cursor.lastrowid
 
             n = 1
             for seq, pic in season['thumbs'].iteritems():
@@ -116,8 +155,14 @@ def parse_tv(tv):
                            %(tv_id)s, %(season_id)s, %(description)s,
                            %(title)s, %(pic)s, %(seq)s)
                       """
-                cursor.execute(sql, item)
-                n += 1
+
+                try:
+                    cursor.execute(sql, item)
+                except db.IntegrityError as e:
+                    if e[0] != 1062:
+                        raise e
+                finally:
+                    n += 1
 
         tv_data = {}
         tv_data['id'] = tv['id']
@@ -136,12 +181,28 @@ def parse_tv(tv):
                    %(rating)s, %(banner)s, %(banner_mini)s, %(imdb_id)s,
                    %(imdb_rating)s)
               """
-        cursor.execute(sql, tv_data)
+        try:
+            cursor.execute(sql, tv_data)
+        except db.IntegrityError as e:
+            if e[0] != 1062:
+                raise e
 
-        for cat in tv['cats'].split('#'):
-            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
-            if cat:
-                cursor.execute(sql, (int(cat), int(tv['id']), 2))
+            _sql = """update tv set
+                        title = %(title)s,
+                        description = %(description)s,
+                        poster = %(poster)s,
+                        rating = %(rating)s,
+                        banner = %(banner)s,
+                        banner_mini = %(banner_mini)s,
+                        imdb_rating = %(imdb_rating)s
+                      where id = %(id)s
+                   """
+            cursor.execute(_sql, tv_data)
+        else:
+            for cat in tv['cats'].split('#'):
+                sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
+                if cat:
+                    cursor.execute(sql, (int(cat), int(tv['id']), 2))
 
 
 @c.task
@@ -160,12 +221,18 @@ def parse_trailer(trailer):
     with Transaction(db) as cursor:
         for t in trailer_data['trailers']:
             t['trailer_id'] = trailer['id']
-            t['link'] = "video/trailer/%s.mp4" % t['link']
+            vid = t['link']
+            t['link'] = "video/trailer/%s.mp4" % vid
             sql = """insert into trailer_source(id, trailer_id, create_date, link)
                        values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
-            cursor.execute(sql, t)
-            # The link is Youtube video ID, put it into download queue.
-            download_video.delay(t['link'])
+            try:
+                cursor.execute(sql, t)
+            except db.IntegrityError as e:
+                if e[0] != 1062:
+                    raise e
+            else:
+                # The link is Youtube video ID, put it into download queue.
+                download_video.delay(vid)
 
         sql = """insert into trailer(
                    id, title, description, poster, rating,
@@ -174,12 +241,17 @@ def parse_trailer(trailer):
                    %(rating)s, %(poster_hires)s, %(release_info)s)
               """
         trailer.update(trailer_data)
-        cursor.execute(sql, trailer)
 
-        for cat in trailer_data['cats'].split('#'):
-            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
-            if cat:
-                cursor.execute(sql, (int(cat), int(trailer['id']), 1))
+        try:
+            cursor.execute(sql, trailer)
+        except db.IntegrityError as e:
+            if e[0] != 1062:
+                raise e
+        else:
+            for cat in trailer_data['cats'].split('#'):
+                sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
+                if cat:
+                    cursor.execute(sql, (int(cat), int(trailer['id']), 1))
 
 
 @c.task
@@ -187,7 +259,7 @@ def download_video(vid):
     """Download Video from youtube"""
     opts = {
         'format': 'mp4',
-        'outtmpl': "tmp/%(id)s.%(ext)s",
+        'outtmpl': "/data0/moviebox/video/trailer/%(id)s.%(ext)s",
     }
     with youtube_dl.YoutubeDL(opts) as ydl:
         ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
