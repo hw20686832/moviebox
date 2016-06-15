@@ -20,8 +20,13 @@ def truncate(*tables):
 
 if __name__ == '__main__':
     arg_tables = sys.argv[1:]
-    all_tables = ['category', 'category_trans', 'movie',
-                  'recommend', 'trailer', 'trailer_source',
-                  'tv', 'tv_episode', 'tv_season']
+    all_tables = [
+        'category', 'category_trans', 'movie',
+        'recommend', 'trailer', 'trailer_source',
+        'tv', 'tv_episode', 'tv_season',
+        'app_upgrade', 'cast', 'cast_trans',
+        'distributor', 'distributor_trans',
+        'director', 'director_trans'
+    ]
 
     truncate(*(arg_tables or all_tables))

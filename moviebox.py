@@ -132,7 +132,7 @@ def parse_movie(movie):
                 else:
                     dist_id = cursor.lastrowid
 
-                sql = "insert into distributor values(%s, %s)"
+                sql = "insert into distributor(id, bind_id) values(%s, %s)"
                 cursor.execute(sql, (dist_id, int(movie['id'])))
 
             # Save directors
@@ -152,7 +152,7 @@ def parse_movie(movie):
                 else:
                     director_id = cursor.lastrowid
 
-                sql = "insert into director values(%s, %s)"
+                sql = "insert into director(id, bind_id) values(%s, %s)"
                 cursor.execute(sql, (director_id, int(movie['id'])))
 
             # Save cast
@@ -160,7 +160,7 @@ def parse_movie(movie):
             urls = root.xpath("//span[@itemprop='actors']/a/@href")
             actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
             for m in actor_map:
-                sql = "insert into acst_trans(name, imdb_id) values(%s, %s)"
+                sql = "insert into cast_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
@@ -168,12 +168,12 @@ def parse_movie(movie):
                         raise e
 
                     cursor.execute("select id from cast_trans where imdb_id = %s", (m[1], ))
-                    director_id = cursor.fetchone()
+                    cast_id = cursor.fetchone()
                 else:
-                    director_id = cursor.lastrowid
+                    cast_id = cursor.lastrowid
 
-                sql = "insert into cast values(%s, %s)"
-                cursor.execute(sql, (director_id, int(movie['id'])))
+                sql = "insert into cast(id, bind_id) values(%s, %s)"
+                cursor.execute(sql, (cast_id, int(movie['id'])))
 
 
 @c.task
