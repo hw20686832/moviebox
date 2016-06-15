@@ -317,6 +317,13 @@ def parse_trailer(self, trailer):
     except requests.ConnectionError, exc:
         raise self.retry(exc=exc, countdown=60)
     trailer_data = response.json()
+    try:
+        trailer_data['release_time'] = datetime.datetime.strptime(trailer_data['release_info'], "%d %b %Y")
+    except:
+        try:
+            trailer_data['release_time'] = datetime.datetime.strptime(trailer_data['release_info'], "%d %B %Y")
+        except:
+            trailer_data['release_time'] = None
 
     with Transaction(db) as cursor:
         for t in trailer_data['trailers']:
@@ -336,9 +343,9 @@ def parse_trailer(self, trailer):
 
         sql = """insert into trailer(
                    id, title, description, poster, rating,
-                   poster_hires, release_info)
+                   poster_hires, release_time)
                  values(%(id)s, %(title)s, %(description)s, %(poster)s,
-                   %(rating)s, %(poster_hires)s, %(release_info)s)
+                   %(rating)s, %(poster_hires)s, %(release_time)s)
               """
         trailer.update(trailer_data)
 
