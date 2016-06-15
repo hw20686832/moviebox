@@ -124,12 +124,14 @@ def parse_movie(movie):
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
-                    print(m)
                     if e[0] != 1062:
                         raise e
 
                     cursor.execute("select id from distributor_trans where imdb_id = %s", (m[1], ))
                     dist_id = cursor.fetchone()
+                except Exception as e:
+                    print(m)
+                    raise e
                 else:
                     dist_id = cursor.lastrowid
 
@@ -141,16 +143,18 @@ def parse_movie(movie):
             urls = root.xpath("//span[@itemprop='director']/a/@href")
             director_map = zip(directors, [url.split('/name/')[1].split('?')[0] for url in urls])
             for m in director_map:
-                sql = "insert into director_trans(name, imdb_id) values('%s', %s)"
+                sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
-                    print(m)
                     if e[0] != 1062:
                         raise e
 
                     cursor.execute("select id from director_trans where imdb_id = %s", (m[1], ))
                     director_id = cursor.fetchone()
+                except Exception as e:
+                    print(m)
+                    raise e
                 else:
                     director_id = cursor.lastrowid
 
@@ -162,16 +166,18 @@ def parse_movie(movie):
             urls = root.xpath("//span[@itemprop='actors']/a/@href")
             actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
             for m in actor_map:
-                sql = "insert into actor_trans(name, imdb_id) values('%s', %s)"
+                sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
-                    print(m)
                     if e[0] != 1062:
                         raise e
 
                     cursor.execute("select id from actor_trans where imdb_id = %s", (m[1], ))
                     actor_id = cursor.fetchone()
+                except Exception as e:
+                    print(m)
+                    raise e
                 else:
                     actor_id = cursor.lastrowid
 
