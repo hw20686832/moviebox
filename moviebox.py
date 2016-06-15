@@ -120,7 +120,7 @@ def parse_movie(movie):
             urls = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/@href")
             distributor_map = zip(distributors, [url.split('/company/')[1].split('?')[0] for url in urls])
             for m in distributor_map:
-                sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
+                sql = "insert into distributor_trans(name, imdb_id) values('%s', %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
@@ -140,7 +140,7 @@ def parse_movie(movie):
             urls = root.xpath("//span[@itemprop='director']/a/@href")
             director_map = zip(directors, [url.split('/name/')[1].split('?')[0] for url in urls])
             for m in director_map:
-                sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
+                sql = "insert into director_trans(name, imdb_id) values('%s', %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
@@ -160,7 +160,7 @@ def parse_movie(movie):
             urls = root.xpath("//span[@itemprop='actors']/a/@href")
             actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
             for m in actor_map:
-                sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
+                sql = "insert into actor_trans(name, imdb_id) values('%s', %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
