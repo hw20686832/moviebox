@@ -48,13 +48,17 @@ class Transaction(object):
         self.cursor.close()
 
 
-@c.task
-def parse_movie(movie):
+@c.task(bind=True, max_retries=3)
+def parse_movie(self, movie):
     cursor = db.cursor()
     cursor.execute("select id from movie where id = %s", movie['id'])
     if cursor.fetchone():
         return "exists."
-    response = requests.get(MOVIE_DETAIL_URL % movie['id'], headers=headers)
+
+    try:
+        response = requests.get(MOVIE_DETAIL_URL % movie['id'], headers=headers)
+    except requests.ConnectionError, exc:
+        raise self.retry(exc=exc, countdown=60)
     movie_data = response.json()
     movie_data['id'] = int(movie['id'])
     movie_data['title'] = movie['title']
@@ -68,7 +72,10 @@ def parse_movie(movie):
         "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0",
         "Host": "www.imdb.com"
     }
-    response = requests.get(IMDB_PAGE_URL % movie['imdb_id'], headers=_headers)
+    try:
+        response = requests.get(IMDB_PAGE_URL % movie['imdb_id'], headers=_headers)
+    except requests.ConnectionError, exc:
+        raise self.retry(exc=exc, countdown=60)
     root = html.fromstring(response.content)
     release_date = root.xpath("//div[@class='subtext']//meta[@itemprop='datePublished']/@content")[0]
     movie_data['release_time'] = datetime.datetime.strptime(release_date, "%Y-%m-%d")
@@ -128,10 +135,7 @@ def parse_movie(movie):
                         raise e
 
                     cursor.execute("select id from distributor_trans where imdb_id = %s", (m[1], ))
-                    dist_id = cursor.fetchone()
-                except Exception as e:
-                    print(m)
-                    raise e
+                    dist_id = cursor.fetchone()[0]
                 else:
                     dist_id = cursor.lastrowid
 
@@ -151,10 +155,7 @@ def parse_movie(movie):
                         raise e
 
                     cursor.execute("select id from director_trans where imdb_id = %s", (m[1], ))
-                    director_id = cursor.fetchone()
-                except Exception as e:
-                    print(m)
-                    raise e
+                    director_id = cursor.fetchone()[0]
                 else:
                     director_id = cursor.lastrowid
 
@@ -174,10 +175,7 @@ def parse_movie(movie):
                         raise e
 
                     cursor.execute("select id from actor_trans where imdb_id = %s", (m[1], ))
-                    actor_id = cursor.fetchone()
-                except Exception as e:
-                    print(m)
-                    raise e
+                    actor_id = cursor.fetchone()[0]
                 else:
                     actor_id = cursor.lastrowid
 
@@ -185,12 +183,15 @@ def parse_movie(movie):
                 cursor.execute(sql, (actor_id, int(movie['id'])))
 
 
-@c.task
-def parse_tv(tv):
+@c.task(bind=True, max_retries=3)
+def parse_tv(self, tv):
     with Transaction(db) as cursor:
         for i in range(1, int(tv.get('seasons', 1))+1):
-            response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
-                                    headers=headers)
+            try:
+                response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
+                                        headers=headers)
+            except requests.ConnectionError, exc:
+                raise self.retry(exc=exc, countdown=60)
             season = response.json()
 
             season_data = {}
@@ -295,8 +296,8 @@ def parse_tv(tv):
                     cursor.execute(sql, (int(cat), int(tv['id']), 2))
 
 
-@c.task
-def parse_trailer(trailer):
+@c.task(bind=True, max_retries=3)
+def parse_trailer(self, trailer):
     headers = {"Host": "sbfunapi.cc",
                "Connection": "keep-alive",
                "Accept": "*/*",
@@ -304,8 +305,11 @@ def parse_trailer(trailer):
                "Accept-Language": "zh-Hans-CN;q=1, en-CN;q=0.9",
                "Accept-Encoding": "gzip, deflate",
                "Connection": "keep-alive"}
-    response = requests.get(TRAILER_DETAIL_URL % trailer['id'],
-                            headers=headers)
+    try:
+        response = requests.get(TRAILER_DETAIL_URL % trailer['id'],
+                                headers=headers)
+    except requests.ConnectionError, exc:
+        raise self.retry(exc=exc, countdown=60)
     trailer_data = response.json()
 
     with Transaction(db) as cursor:
@@ -344,8 +348,8 @@ def parse_trailer(trailer):
                     cursor.execute(sql, (int(cat), int(trailer['id']), 1))
 
 
-@c.task
-def download_video(vid):
+@c.task(bind=True, max_retries=3)
+def download_video(self, vid):
     """Download Video from youtube"""
     opts = {
         'proxy': 'socks5://127.0.0.1:1080/',
