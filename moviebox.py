@@ -337,6 +337,7 @@ def parse_trailer(trailer):
 def download_video(vid):
     """Download Video from youtube"""
     opts = {
+        'proxy': 'socks5://127.0.0.1:1080/',
         'format': 'mp4',
         'outtmpl': "/data0/androidmoviebox/video/trailer/%(id)s.%(ext)s",
     }
