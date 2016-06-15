@@ -120,10 +120,11 @@ def parse_movie(movie):
             urls = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/@href")
             distributor_map = zip(distributors, [url.split('/company/')[1].split('?')[0] for url in urls])
             for m in distributor_map:
-                sql = "insert into distributor_trans(name, imdb_id) values('%s', %s)"
+                sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
+                    print(m)
                     if e[0] != 1062:
                         raise e
 
@@ -144,6 +145,7 @@ def parse_movie(movie):
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
+                    print(m)
                     if e[0] != 1062:
                         raise e
 
@@ -164,6 +166,7 @@ def parse_movie(movie):
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
+                    print(m)
                     if e[0] != 1062:
                         raise e
 
