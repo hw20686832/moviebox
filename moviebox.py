@@ -204,7 +204,7 @@ def parse_tv(self, tv):
             season_data['tv_id'] = int(tv['id'])
             season_data['seq'] = str(i)
             season_data['banner'] = season['banner']
-            season_data['description'] = season['description']
+            season_data['description'] = season['description'].encode('utf-8')
             season_data['update_time'] = datetime.datetime.now()
 
             sql = """insert into tv_season(
@@ -238,7 +238,7 @@ def parse_tv(self, tv):
                 item = {}
                 item['tv_id'] = int(tv['id'])
                 item['season_id'] = season_id
-                item["title"] = season['titles'][seq]
+                item["title"] = season['titles'][seq].encode('utf-8')
                 item['description'] = ''
                 item['pic'] = pic
                 item['seq'] = seq
@@ -261,7 +261,7 @@ def parse_tv(self, tv):
 
         tv_data = {}
         tv_data['id'] = tv['id']
-        tv_data['title'] = tv['title']
+        tv_data['title'] = tv['title'].encode('utf-8')
         tv_data['description'] = ''
         tv_data['poster'] = tv['poster']
         tv_data['rating'] = int(tv['rating'] or 0)
@@ -362,7 +362,7 @@ def parse_trailer(self, trailer):
 
 
 @c.task
-def download_video(self, vid):
+def download_video(vid):
     """Download Video from youtube"""
     opts = {
         'format': 'mp4',
