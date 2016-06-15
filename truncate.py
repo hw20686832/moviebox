@@ -15,7 +15,9 @@ def truncate(*tables):
     for table in tables:
         sql = "delete from %s" % table
         cursor.execute(sql)
+        print("Truncate table %s." % table)
     db.commit()
+    print("finish.")
 
 
 if __name__ == '__main__':
@@ -24,7 +26,7 @@ if __name__ == '__main__':
         'category', 'category_trans', 'movie',
         'recommend', 'trailer', 'trailer_source',
         'tv', 'tv_episode', 'tv_season',
-        'app_upgrade', 'cast', 'cast_trans',
+        'app_upgrade', 'actor', 'actor_trans',
         'distributor', 'distributor_trans',
         'director', 'director_trans'
     ]
