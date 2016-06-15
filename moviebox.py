@@ -155,25 +155,25 @@ def parse_movie(movie):
                 sql = "insert into director(id, bind_id) values(%s, %s)"
                 cursor.execute(sql, (director_id, int(movie['id'])))
 
-            # Save cast
+            # Save actor
             actors = root.xpath("//span[@itemprop='actors']/a/span[@itemprop='name']/text()")
             urls = root.xpath("//span[@itemprop='actors']/a/@href")
             actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
             for m in actor_map:
-                sql = "insert into cast_trans(name, imdb_id) values(%s, %s)"
+                sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, m)
                 except db.IntegrityError as e:
                     if e[0] != 1062:
                         raise e
 
-                    cursor.execute("select id from cast_trans where imdb_id = %s", (m[1], ))
-                    cast_id = cursor.fetchone()
+                    cursor.execute("select id from actor_trans where imdb_id = %s", (m[1], ))
+                    actor_id = cursor.fetchone()
                 else:
-                    cast_id = cursor.lastrowid
+                    actor_id = cursor.lastrowid
 
-                sql = "insert into cast(id, bind_id) values(%s, %s)"
-                cursor.execute(sql, (cast_id, int(movie['id'])))
+                sql = "insert into actor(id, bind_id) values(%s, %s)"
+                cursor.execute(sql, (actor_id, int(movie['id'])))
 
 
 @c.task
