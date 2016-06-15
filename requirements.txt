@@ -1,0 +1,4 @@
+celery
+youtube_dl
+requests
+lxml
