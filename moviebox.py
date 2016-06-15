@@ -48,7 +48,7 @@ class Transaction(object):
         self.cursor.close()
 
 
-@c.task(bind=True, max_retries=3)
+@c.task(bind=True, max_retries=10)
 def parse_movie(self, movie):
     cursor = db.cursor()
     cursor.execute("select id from movie where id = %s", movie['id'])
@@ -77,9 +77,15 @@ def parse_movie(self, movie):
     except requests.ConnectionError, exc:
         raise self.retry(exc=exc, countdown=60)
     root = html.fromstring(response.content)
-    release_date = root.xpath("//div[@class='subtext']//meta[@itemprop='datePublished']/@content")[0]
-    movie_data['release_time'] = datetime.datetime.strptime(release_date, "%Y-%m-%d")
-    movie_data['play_time'] = root.xpath("//div[@class='subtext']//time[@itemprop='duration']/@datetime")[0]
+    try:
+        release_date = root.xpath("//div[@class='subtext']//meta[@itemprop='datePublished']/@content")[0]
+        movie_data['release_time'] = datetime.datetime.strptime(release_date, "%Y-%m-%d")
+    except:
+        movie_data['release_time'] = None
+    try:
+        movie_data['play_time'] = root.xpath("//div[@class='subtext']//time[@itemprop='duration']/@datetime")[0]
+    except:
+        movie_data['play_time'] = None
 
     with Transaction(db) as cursor:
         sql = "insert into movie( \
@@ -183,7 +189,7 @@ def parse_movie(self, movie):
                 cursor.execute(sql, (actor_id, int(movie['id'])))
 
 
-@c.task(bind=True, max_retries=3)
+@c.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
     with Transaction(db) as cursor:
         for i in range(1, int(tv.get('seasons', 1))+1):
@@ -296,7 +302,7 @@ def parse_tv(self, tv):
                     cursor.execute(sql, (int(cat), int(tv['id']), 2))
 
 
-@c.task(bind=True, max_retries=3)
+@c.task(bind=True, max_retries=10)
 def parse_trailer(self, trailer):
     headers = {"Host": "sbfunapi.cc",
                "Connection": "keep-alive",
