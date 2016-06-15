@@ -24,6 +24,8 @@ IMDB_PAGE_URL = "http://www.imdb.com/title/%s/"
 
 db = MySQLdb.connect(**settings.MYSQL_CONF)
 c = celery.Celery("moviebox", broker="redis://:%(password)s@%(host)s:%(port)d/%(db)d" % settings.REDIS_CONF)
+# Allow celery run as root
+celery.platforms.C_FORCE_ROOT = True
 
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
            "Host": "sbfunapi.cc", "Connection": "Keep-Alive"}

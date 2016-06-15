@@ -1,4 +1,6 @@
+gevent
 celery
 youtube_dl
 requests
 lxml
+redis
