@@ -1,15 +1,15 @@
 # coding:utf-8
-import os
 import json
 import random
 import zipfile
 import StringIO
+import datetime
 
 import celery
 import requests
 import MySQLdb
 import youtube_dl
-from boto.s3.connection import S3Connection
+from lxml import html
 
 import settings
 
@@ -20,10 +20,9 @@ TRAILER_DETAIL_URL = "http://sbfunapi.cc/api/serials/trailers/?id=%s"
 MOVIE_DETAIL_URL = "http://sbfunapi.cc/api/serials/movie_details/?id=%s"
 TV_DETAIL_URL = "http://sbfunapi.cc/api/serials/es/?season=%s&id=%s"
 
-conn = S3Connection()
-bucket = conn.get_bucket('androidpackage')
-db = MySQLdb.connect(**settings.MYSQL_CONF)
+IMDB_PAGE_URL = "http://www.imdb.com/title/%s/"
 
+db = MySQLdb.connect(**settings.MYSQL_CONF)
 c = celery.Celery("moviebox", broker="redis://:%(password)s@%(host)s:%(port)d/%(db)d" % settings.REDIS_CONF)
 
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
@@ -51,7 +50,7 @@ class Transaction(object):
 def parse_movie(movie):
     cursor = db.cursor()
     cursor.execute("select id from movie where id = %s", movie['id'])
-    if cursor.fetchall():
+    if cursor.fetchone():
         return "exists."
     response = requests.get(MOVIE_DETAIL_URL % movie['id'], headers=headers)
     movie_data = response.json()
@@ -61,15 +60,29 @@ def parse_movie(movie):
     movie_data['rating'] = int(movie['rating'] or 0)
     movie_data['year'] = movie['year']
     movie_data['is_deleted'] = False
+    movie_data['update_time'] = datetime.datetime.now()
+
+    _headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0",
+        "Host": "www.imdb.com"
+    }
+    response = requests.get(IMDB_PAGE_URL % movie['imdb_id'], headers=_headers)
+    root = html.fromstring(response.content)
+    release_date = root.xpath("//div[@class='subtext']//meta[@itemprop='datePublished']/@content")[0]
+    movie_data['release_time'] = datetime.datetime.strptime(release_date, "%Y-%m-%d")
+    movie_data['play_time'] = root.xpath("//div[@class='subtext']//time[@itemprop='duration']/@datetime")[0]
 
     with Transaction(db) as cursor:
         sql = "insert into movie( \
                  id, title, description, year, \
-                 poster, rating, imdb_id, imdb_rating, is_deleted) \
+                 poster, rating, imdb_id, imdb_rating, \
+                 update_time, release_time, play_time, is_deleted) \
                values(\
                  %(id)s, %(title)s, %(description)s, \
                  %(year)s, %(poster)s, %(rating)s, \
-                 %(imdb_id)s, %(imdb_rating)s, %(is_deleted)s)"
+                 %(imdb_id)s, %(imdb_rating)s, \
+                 %(update_time)s, %(release_time)s, %(play_time)s, \
+                 %(is_deleted)s)"
 
         try:
             cursor.execute(sql, movie_data)
@@ -84,18 +97,81 @@ def parse_movie(movie):
                         rating = %(rating)s,
                         poster = %(poster)s,
                         imdb_rating = %(imdb_rating)s
+                        update_time = %(update_time)s
                       where id = %(id)s
                    """
             cursor.execute(_sql, movie_data)
         else:
+            # Save category
             for cat in movie['cats'].split('#'):
                 sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
                 if cat:
                     cursor.execute(sql, (int(cat), int(movie['id']), 0))
 
+            # Save recommend
             for rec in movie_data['recommend']:
                 sql = "insert into recommend values(%s, %s)"
                 cursor.execute(sql, (int(rec), int(movie['id'])))
+
+            # Save distributors
+            distributors = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/span[@itemprop='name']/text()")
+            urls = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/@href")
+            distributor_map = zip(distributors, [url.split('/company/')[1].split('?')[0] for url in urls])
+            for m in distributor_map:
+                sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
+                try:
+                    cursor.execute(sql, m)
+                except db.IntegrityError as e:
+                    if e[0] != 1062:
+                        raise e
+
+                    cursor.execute("select id from distributor_trans where imdb_id = %s", (m[1], ))
+                    dist_id = cursor.fetchone()
+                else:
+                    dist_id = cursor.lastrowid
+
+                sql = "insert into distributor values(%s, %s)"
+                cursor.execute(sql, (dist_id, int(movie['id'])))
+
+            # Save directors
+            directors = root.xpath("//span[@itemprop='director']/a/span[@itemprop='name']/text()")
+            urls = root.xpath("//span[@itemprop='director']/a/@href")
+            director_map = zip(directors, [url.split('/name/')[1].split('?')[0] for url in urls])
+            for m in director_map:
+                sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
+                try:
+                    cursor.execute(sql, m)
+                except db.IntegrityError as e:
+                    if e[0] != 1062:
+                        raise e
+
+                    cursor.execute("select id from director_trans where imdb_id = %s", (m[1], ))
+                    director_id = cursor.fetchone()
+                else:
+                    director_id = cursor.lastrowid
+
+                sql = "insert into director values(%s, %s)"
+                cursor.execute(sql, (director_id, int(movie['id'])))
+
+            # Save cast
+            actors = root.xpath("//span[@itemprop='actors']/a/span[@itemprop='name']/text()")
+            urls = root.xpath("//span[@itemprop='actors']/a/@href")
+            actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
+            for m in actor_map:
+                sql = "insert into acst_trans(name, imdb_id) values(%s, %s)"
+                try:
+                    cursor.execute(sql, m)
+                except db.IntegrityError as e:
+                    if e[0] != 1062:
+                        raise e
+
+                    cursor.execute("select id from cast_trans where imdb_id = %s", (m[1], ))
+                    director_id = cursor.fetchone()
+                else:
+                    director_id = cursor.lastrowid
+
+                sql = "insert into cast values(%s, %s)"
+                cursor.execute(sql, (director_id, int(movie['id'])))
 
 
 @c.task
@@ -111,6 +187,7 @@ def parse_tv(tv):
             season_data['seq'] = str(i)
             season_data['banner'] = season['banner']
             season_data['description'] = season['description']
+            season_data['update_time'] = datetime.datetime.now()
 
             sql = """insert into tv_season(
                        tv_id, banner, description, seq)
@@ -174,6 +251,8 @@ def parse_tv(tv):
         tv_data['banner_mini'] = tv['banner_mini']
         tv_data['imdb_id'] = tv['imdb_id']
         tv_data['imdb_rating'] = ''
+        tv_data['update_time'] = datetime.datetime.now()
+
         sql = """insert into tv(
                    id, title, description, poster, rating,
                    banner, banner_mini, imdb_id, imdb_rating)
@@ -259,16 +338,10 @@ def download_video(vid):
     """Download Video from youtube"""
     opts = {
         'format': 'mp4',
-        'outtmpl': "/data0/moviebox/video/trailer/%(id)s.%(ext)s",
+        'outtmpl': "/data0/androidmoviebox/video/trailer/%(id)s.%(ext)s",
     }
     with youtube_dl.YoutubeDL(opts) as ydl:
         ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
-
-    key = bucket.new_key("video/trailer/%s.mp4" % vid)
-    key.set_contents_from_filename("tmp/%s.mp4" % vid)
-    key.close()
-
-    os.remove("tmp/%s.mp4" % vid)
 
 
 def run():
@@ -302,6 +375,7 @@ def run():
         parse_trailer.delay(trailer)
     print("Trailer count %d" % len(trailers))
 
+    # Save category names
     cates = json.loads(zf.read('cats.json'))
     with Transaction(db) as cursor:
         for i, name in cates.items():
