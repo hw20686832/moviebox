@@ -361,11 +361,9 @@ def parse_trailer(self, trailer):
                     cursor.execute(sql, (int(cat), int(trailer['id']), 1))
 
 
-@c.task(bind=True, max_retries=3)
 def download_video(self, vid):
     """Download Video from youtube"""
     opts = {
-        'proxy': 'socks5://127.0.0.1:1080/',
         'format': 'mp4',
         'outtmpl': "/data0/androidmoviebox/video/trailer/%(id)s.%(ext)s",
     }
