@@ -42,8 +42,8 @@ def upgrade():
                   """
             url = os.path.join('package', filename)
             md5 = hashlib.md5(file.read()).hexdigest()
-            version_code = request.POST.get('version_code')
-            upgrade_info = request.POST.get('upgrade_info')
+            version_code = request.args.get('version_code')
+            upgrade_info = request.args.get('upgrade_info')
             release_time = datetime.datetime.now()
             cursor.execute(sql, (url, md5, version_code, upgrade_info, release_time))
             db.commit()
