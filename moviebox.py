@@ -264,6 +264,8 @@ def parse_tv(self, tv):
                 season_id = cursor.lastrowid
 
             n = 1
+            if type(season['thumbs']) is list:
+                raise Exception("TV %s, Season %s" % (tv['id'], str(season_id)))
             for seq, pic in season['thumbs'].iteritems():
                 item = {}
                 item['tv_id'] = int(tv['id'])
@@ -403,8 +405,8 @@ def parse_trailer(self, trailer):
                     cursor.execute(sql, (int(cat), int(trailer['id']), 1))
 
 
-@c.task
-def download_video(vid):
+@c.task(bind=True, max_retries=10)
+def download_video(self, vid):
     """Download Video from youtube"""
     opts = {
         'format': 'mp4',
@@ -414,7 +416,13 @@ def download_video(vid):
         ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
 
     files = [('file', (u"%s.mp4" % vid, open(u"tmp/%s.mp4" % vid, 'rb'))), ]
-    response = requests.post("http://61.155.215.52:3000/upload", files=files)
+    try:
+        response = requests.post("http://61.155.215.52:3000/upload", files=files)
+        if response.content != 'ok':
+            raise Exception("Upload failure!")
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=60)
+
     return vid, response.content
 
 

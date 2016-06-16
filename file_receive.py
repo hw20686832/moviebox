@@ -1,13 +1,18 @@
 # coding:utf-8
 import os
+import datetime
+import hashlib
 
+import MySQLdb
 from flask import Flask, request
 
-UPLOAD_FOLDER = '/path/to/the/uploads'
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+import settings
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = "/data0/androidmoviebox/video/trailer/"
+app.config['TRAILER_FOLDER'] = "/data0/androidmoviebox/video/trailer/"
+app.config['PACKAGE_FOLDER'] = "/data0/androidmoviebox/package"
+
+db = MySQLdb.connect(**settings.MYSQL_CONF)
 
 
 @app.route('/upload', methods=['POST'])
@@ -16,7 +21,32 @@ def upload_file():
         file = request.files['file']
         if file:
             filename = file.filename
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            file.save(os.path.join(app.config['TRAILER_FOLDER'], filename))
+
+            return "ok"
+
+
+@app.route('/upgrade', methods=['POST'])
+def upgrade():
+    if request.method == 'POST':
+        file = request.files['file']
+        if file:
+            filename = file.filename
+            file.save(os.path.join(app.config['PACKAGE_FOLDER'], filename))
+
+            cursor = db.cursor()
+            sql = """insert into app_upgrade
+                       (url, md5, version_code, upgrade_info, release_time)
+                     values
+                       (%s, %s, %s, %s, %s)
+                  """
+            url = os.path.join('package', filename)
+            md5 = hashlib.md5(file.read()).hexdigest()
+            version_code = request.POST.get('version_code')
+            upgrade_info = request.POST.get('upgrade_info')
+            release_time = datetime.datetime.now()
+            cursor.execute(sql, (url, md5, version_code, upgrade_info, release_time))
+            db.commit()
 
             return "ok"
 
