@@ -131,11 +131,7 @@ def parse_movie(self, movie):
                 raise e
 
             _sql = """update movie set
-                        description = %(description)s,
-                        title = %(title)s,
-                        year = %(year)s,
                         rating = %(rating)s,
-                        poster = %(poster)s,
                         imdb_rating = %(imdb_rating)s
                         update_time = %(update_time)s
                       where id = %(id)s
@@ -242,13 +238,6 @@ def parse_tv(self, tv):
                 if e[0] != 1062:
                     raise e
 
-                _sql = """update tv_season
-                            set banner = '%(banner)s',
-                            set description = '%(description)s'
-                          where tv_id = %(tv_id)s and seq = %(seq)s
-                       """
-                cursor.execute(_sql % season_data)
-
                 _sql = """select id from tv_seson
                          where tv_id = %(tv_id)s and seq = %(seq)s
                       """
@@ -322,12 +311,8 @@ def parse_tv(self, tv):
                 raise e
 
             _sql = """update tv set
-                        title = %(title)s,
-                        description = %(description)s,
                         poster = %(poster)s,
                         rating = %(rating)s,
-                        banner = %(banner)s,
-                        banner_mini = %(banner_mini)s,
                         imdb_rating = %(imdb_rating)s,
                         release_time = %(release_time)s
                       where id = %(id)s
