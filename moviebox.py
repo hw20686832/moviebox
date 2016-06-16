@@ -386,8 +386,8 @@ def download_video(vid):
     with youtube_dl.YoutubeDL(opts) as ydl:
         ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
 
-    files = ('file', (u"%s.mp4" % vid, open(u"tmp/%s.mp4" % vid, 'rb')))
-    response = requests.get("http://61.155.215.52:3000/upload", files=files)
+    files = [('file', (u"%s.mp4" % vid, open(u"tmp/%s.mp4" % vid, 'rb'))), ]
+    response = requests.post("http://61.155.215.52:3000/upload", files=files)
     return vid, response.content
 
 

@@ -1,30 +1,25 @@
 # coding:utf-8
 import os
 
-import tornado.ioloop
-import tornado.web
+from flask import Flask, request
+
+UPLOAD_FOLDER = '/path/to/the/uploads'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = "/data0/androidmoviebox/video/trailer/"
 
 
-BASE = "/data0/androidmoviebox/"
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if request.method == 'POST':
+        file = request.files['file']
+        if file:
+            filename = file.filename
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+            return "ok"
 
 
-class UploadFileHandler(tornado.web.RequestHandler):
-    def post(self):
-        file_metas = self.request.files['file']
-        for meta in file_metas:
-            filename = meta['filename']
-            filepath = os.path.join(BASE, filename)
-            with open(filepath, 'wb') as up:
-                up.write(meta['body'])
-
-            self.write('finished!')
-
-
-app = tornado.web.Application([
-    (r'/upload', UploadFileHandler),
-])
-
-
-if __name__ == '__main__':
-    app.listen(3000, address='0.0.0.0')
-    tornado.ioloop.IOLoop.instance().start()
+if __name__ == "__main__":
+    app.run('0.0.0.0', 3000)
