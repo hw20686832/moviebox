@@ -1,19 +1,22 @@
 # coding:utf-8
 from __future__ import unicode_literals
 
+import sys
 import re
 import json
 import random
 import zipfile
 import StringIO
 import datetime
+from optparse import OptionParser
 
 import celery
+from celery.bin import worker
+from kombu import Queue
 import requests
 import MySQLdb
 import youtube_dl
 from lxml import html
-from kombu import Queue
 
 import settings
 
@@ -415,7 +418,7 @@ def download_video(vid):
     return vid, response.content
 
 
-def run():
+def schedule():
     headers = {"User-Agent": "Dalvik/2.1.0 (Linux; U; Android 6.0; Nexus 5 Build/MPA44G)"}
     response = requests.get(LIST_URL % str(random.random()), headers=headers)
     zio = StringIO.StringIO(response.content)
@@ -454,6 +457,20 @@ def run():
             cursor.execute(sql, (int(i), name))
 
     zf.close()
+
+
+def run():
+    try:
+        cmd = sys.argv[1]
+    except IndexError:
+        print("incorrect number of arguments\nUsage: %prog [crawl|schedule] [options] arg")
+        sys.exit()
+
+    if cmd == "crawl":
+        task = worker.worker(app=c)
+        task.execute_from_commandline()
+    elif cmd == "schedule":
+        schedule()
 
 if __name__ == '__main__':
     run()
