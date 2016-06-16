@@ -52,7 +52,6 @@ class Config(object):
     }
 
 
-#c = celery.Celery("moviebox", broker="redis://:%(password)s@%(host)s:%(port)d/%(db)d" % settings.REDIS_CONF)
 c = celery.Celery("moviebox")
 c.config_from_object(Config)
 # Allow celery run as root
@@ -455,7 +454,12 @@ def schedule():
     with Transaction(db) as cursor:
         for i, name in cates.items():
             sql = "insert into category_trans(id, text_name) values(%s, %s)"
-            cursor.execute(sql, (int(i), name))
+            try:
+                cursor.execute(sql, (int(i), name))
+            except db.IntegrityError as e:
+                if e[0] != 1062:
+                    raise e
+                continue
 
     zf.close()
 
@@ -465,13 +469,14 @@ def run():
         cmd = sys.argv[1]
     except IndexError:
         print("incorrect number of arguments\nUsage: %prog [crawl|schedule] [options] arg")
-        sys.exit()
+        sys.exit(1)
 
     if cmd == "crawl":
         task = worker.worker(app=c)
         task.execute_from_commandline(sys.argv[1:])
     elif cmd == "schedule":
         schedule()
+
 
 if __name__ == '__main__':
     run()
