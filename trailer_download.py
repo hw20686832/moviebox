@@ -1,20 +1,30 @@
 # coding:utf-8
-import celery
-import youtube_dl
+import os
 
-import settings
-
-
-c = celery.Celery("trailer_download", broker="redis://:%(password)s@%(host)s:%(port)d/2" % settings.REDIS_CONF)
+import tornado.ioloop
+import tornado.web
 
 
-@c.task(bind=True, max_retries=3)
-def download_video(self, vid):
-    """Download Video from youtube"""
-    opts = {
-        'proxy': 'socks5://127.0.0.1:1080/',
-        'format': 'mp4',
-        'outtmpl': "/data0/androidmoviebox/video/trailer/%(id)s.%(ext)s",
-    }
-    with youtube_dl.YoutubeDL(opts) as ydl:
-        ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
+BASE = "/data0/androidmoviebox/"
+
+
+class UploadFileHandler(tornado.web.RequestHandler):
+    def post(self):
+        file_metas = self.request.files['file']
+        for meta in file_metas:
+            filename = meta['filename']
+            filepath = os.path.join(BASE, filename)
+            with open(filepath, 'wb') as up:
+                up.write(meta['body'])
+
+            self.write('finished!')
+
+
+app = tornado.web.Application([
+    (r'/upload', UploadFileHandler),
+])
+
+
+if __name__ == '__main__':
+    app.listen(3000)
+    tornado.ioloop.IOLoop.instance().start()
