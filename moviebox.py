@@ -1,4 +1,7 @@
 # coding:utf-8
+from __future__ import unicode_literals
+
+import re
 import json
 import random
 import zipfile
@@ -271,12 +274,23 @@ def parse_tv(self, tv):
         tv_data['imdb_rating'] = ''
         tv_data['update_time'] = datetime.datetime.now()
 
+        try:
+            response = requests.get(IMDB_PAGE_URL % tv['imdb_id'], headers=headers)
+        except requests.ConnectionError, exc:
+            raise self.retry(exc=exc, countdown=60)
+        root = html.fromstring(response.content)
+        try:
+            release_date = root.xpath("//div[@id='titleDetails']/div/h4[text()='Release Date:']/following-sibling::text()")[0]
+            tv_data['release_time'] = datetime.datetime.strptime(re.sub("\(.*\)", '', release_date).strip(), '%d %B %Y')
+        except:
+            tv_data['release_time'] = None
+
         sql = """insert into tv(
                    id, title, description, poster, rating,
-                   banner, banner_mini, imdb_id, imdb_rating)
+                   banner, banner_mini, imdb_id, imdb_rating, release_time)
                  values(%(id)s, %(title)s, %(description)s, %(poster)s,
                    %(rating)s, %(banner)s, %(banner_mini)s, %(imdb_id)s,
-                   %(imdb_rating)s)
+                   %(imdb_rating)s, %(release_time)s)
               """
         try:
             cursor.execute(sql, tv_data)
@@ -291,7 +305,8 @@ def parse_tv(self, tv):
                         rating = %(rating)s,
                         banner = %(banner)s,
                         banner_mini = %(banner_mini)s,
-                        imdb_rating = %(imdb_rating)s
+                        imdb_rating = %(imdb_rating)s,
+                        release_time = %(release_time)s
                       where id = %(id)s
                    """
             cursor.execute(_sql, tv_data)
@@ -366,7 +381,7 @@ def download_video(vid):
     """Download Video from youtube"""
     opts = {
         'format': 'mp4',
-        'outtmpl': "/data0/androidmoviebox/video/trailer/%(id)s.%(ext)s",
+        'outtmpl': u"/data0/androidmoviebox/video/trailer/%(id)s.%(ext)s",
     }
     with youtube_dl.YoutubeDL(opts) as ydl:
         ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
