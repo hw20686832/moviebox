@@ -468,7 +468,7 @@ def run():
 
     if cmd == "crawl":
         task = worker.worker(app=c)
-        task.execute_from_commandline()
+        task.execute_from_commandline(sys.argv[1:])
     elif cmd == "schedule":
         schedule()
 
