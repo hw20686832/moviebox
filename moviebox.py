@@ -80,11 +80,6 @@ class Transaction(object):
 
 @c.task(bind=True, max_retries=10)
 def parse_movie(self, movie):
-    cursor = db.cursor()
-    cursor.execute("select id from movie where id = %s", movie['id'])
-    if cursor.fetchone():
-        return "exists."
-
     try:
         response = requests.get(MOVIE_DETAIL_URL % movie['id'], headers=headers)
     except requests.ConnectionError, exc:
@@ -248,11 +243,11 @@ def parse_tv(self, tv):
                     raise e
 
                 _sql = """update tv_season
-                            set banner = %(banner)s,
-                            set description = %(description)s
+                            set banner = '%(banner)s',
+                            set description = '%(description)s'
                           where tv_id = %(tv_id)s and seq = %(seq)s
                        """
-                cursor.execute(_sql, season_data)
+                cursor.execute(_sql % season_data)
 
                 _sql = """select id from tv_seson
                          where tv_id = %(tv_id)s and seq = %(seq)s
