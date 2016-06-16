@@ -132,7 +132,7 @@ def parse_movie(self, movie):
 
             _sql = """update movie set
                         rating = %(rating)s,
-                        imdb_rating = %(imdb_rating)s
+                        imdb_rating = %(imdb_rating)s,
                         update_time = %(update_time)s
                       where id = %(id)s
                    """
@@ -238,7 +238,7 @@ def parse_tv(self, tv):
                 if e[0] != 1062:
                     raise e
 
-                _sql = """select id from tv_seson
+                _sql = """select id from tv_season
                          where tv_id = %(tv_id)s and seq = %(seq)s
                       """
                 cursor.execute(_sql, season_data)
