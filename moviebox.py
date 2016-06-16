@@ -1,6 +1,7 @@
 # coding:utf-8
 from __future__ import unicode_literals
 
+import os
 import sys
 import re
 import json
@@ -393,16 +394,18 @@ def download_video(self, vid):
         'format': 'mp4',
         'outtmpl': u"tmp/%(id)s.%(ext)s",
     }
-    with youtube_dl.YoutubeDL(opts) as ydl:
-        ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
-
-    files = [('file', (u"%s.mp4" % vid, open(u"tmp/%s.mp4" % vid, 'rb'))), ]
     try:
+        with youtube_dl.YoutubeDL(opts) as ydl:
+            ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
+
+        files = [('file', (u"%s.mp4" % vid, open(u"tmp/%s.mp4" % vid, 'rb'))), ]
         response = requests.post("http://61.155.215.52:3000/upload", files=files)
         if response.content != 'ok':
             raise Exception("Upload failure!")
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
+    finally:
+        os.remove(u"tmp/%s.mp4" % vid)
 
     return vid, response.content
 
