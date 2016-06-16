@@ -8,7 +8,6 @@ import random
 import zipfile
 import StringIO
 import datetime
-from optparse import OptionParser
 
 import celery
 from celery.bin import worker
@@ -46,8 +45,10 @@ class Config(object):
     CELERY_DEFAULT_QUEUE = 'info'
     CELERY_DEFAULT_EXCHANGE_TYPE = 'topic'
     CELERY_ROUTES = {
-        'moviebox.parse_#': {'queue': 'info'},
-        'moviebox.download_#': {'queue': 'video'},
+        'moviebox.parse_movie': {'queue': 'info'},
+        'moviebox.parse_tv': {'queue': 'info'},
+        'moviebox.parse_trailer': {'queue': 'info'},
+        'moviebox.download_video': {'queue': 'video'},
     }
 
 
