@@ -13,6 +13,7 @@ import requests
 import MySQLdb
 import youtube_dl
 from lxml import html
+from kombu import Queue
 
 import settings
 
@@ -26,7 +27,30 @@ TV_DETAIL_URL = "http://sbfunapi.cc/api/serials/es/?season=%s&id=%s"
 IMDB_PAGE_URL = "http://www.imdb.com/title/%s/"
 
 db = MySQLdb.connect(**settings.MYSQL_CONF)
-c = celery.Celery("moviebox", broker="redis://:%(password)s@%(host)s:%(port)d/%(db)d" % settings.REDIS_CONF)
+
+
+class Config(object):
+    BROKER_URL = "redis://:%(password)s@%(host)s:%(port)d/%(db)d" % settings.REDIS_CONF
+    CELERY_TASK_RESULT_EXPIRES = 3600
+    CELERY_ACCEPT_CONTENT = ['json', ]
+    CELERY_TASK_SERIALIZER = 'json'
+
+    CELERY_QUEUES = (
+        Queue('info', routing_key='moviebox.parse_#'),
+        Queue('video', routing_key='moviebox.download_#')
+    )
+
+    CELERY_DEFAULT_QUEUE = 'info'
+    CELERY_DEFAULT_EXCHANGE_TYPE = 'topic'
+    CELERY_ROUTES = {
+        'moviebox.parse_#': {'queue': 'info'},
+        'moviebox.download_#': {'queue': 'video'},
+    }
+
+
+#c = celery.Celery("moviebox", broker="redis://:%(password)s@%(host)s:%(port)d/%(db)d" % settings.REDIS_CONF)
+c = celery.Celery("moviebox")
+c.config_from_object(Config)
 # Allow celery run as root
 celery.platforms.C_FORCE_ROOT = True
 
