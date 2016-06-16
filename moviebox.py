@@ -405,7 +405,8 @@ def download_video(self, vid):
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
     finally:
-        os.remove(u"tmp/%s.mp4" % vid)
+        if os.path.isfile(u"tmp/%s.mp4" % vid):
+            os.remove(u"tmp/%s.mp4" % vid)
 
     return vid, response.content
 
