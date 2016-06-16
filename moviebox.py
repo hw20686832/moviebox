@@ -95,7 +95,7 @@ def parse_movie(self, movie):
     movie_data['imdb_id'] = movie['imdb_id']
     movie_data['rating'] = int(movie['rating'] or 0)
     movie_data['year'] = movie['year']
-    movie_data['is_deleted'] = False
+    movie_data['is_deleted'] = int(movie.get('active', 0))
     movie_data['update_time'] = datetime.datetime.now()
 
     _headers = {
@@ -222,7 +222,7 @@ def parse_movie(self, movie):
 @c.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
     with Transaction(db) as cursor:
-        for i in range(1, int(tv.get('seasons', 1))+1):
+        for i in range(1, int(tv.get('seasons', 0))+1):
             try:
                 response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
                                         headers=headers)
@@ -264,8 +264,6 @@ def parse_tv(self, tv):
                 season_id = cursor.lastrowid
 
             n = 1
-            if type(season['thumbs']) is list:
-                raise Exception("TV %s, Season %s" % (tv['id'], str(season_id)))
             for seq, pic in season['thumbs'].iteritems():
                 item = {}
                 item['tv_id'] = int(tv['id'])
@@ -302,6 +300,7 @@ def parse_tv(self, tv):
         tv_data['imdb_id'] = tv['imdb_id']
         tv_data['imdb_rating'] = ''
         tv_data['update_time'] = datetime.datetime.now()
+        tv_data['is_deleted'] = int(tv.get('active', 0))
 
         try:
             response = requests.get(IMDB_PAGE_URL % tv['imdb_id'], headers=headers)
