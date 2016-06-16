@@ -248,9 +248,9 @@ def parse_tv(self, tv):
                     raise e
 
                 _sql = """update tv_season
-                            set banner = %s,
-                            set description = %s
-                          where tv_id = %s and seq = %s
+                            set banner = %(banner)s,
+                            set description = %(description)s
+                          where tv_id = %(tv_id)s and seq = %(seq)s
                        """
                 cursor.execute(_sql, season_data)
 
