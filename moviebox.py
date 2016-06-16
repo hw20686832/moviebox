@@ -248,6 +248,8 @@ def parse_tv(self, tv):
                 season_id = cursor.lastrowid
 
             n = 1
+            if type(season['thumbs']) is list:
+                season['thumbs'] = {}
             for seq, pic in season['thumbs'].iteritems():
                 item = {}
                 item['tv_id'] = int(tv['id'])
