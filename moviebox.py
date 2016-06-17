@@ -91,7 +91,7 @@ def parse_movie(self, movie):
     movie_data['imdb_id'] = movie['imdb_id']
     movie_data['rating'] = int(movie['rating'] or 0)
     movie_data['year'] = movie['year']
-    movie_data['is_deleted'] = int(movie.get('active', 0))
+    movie_data['is_deleted'] = not bool(int(movie.get('active')))
     movie_data['update_time'] = datetime.datetime.now()
 
     _headers = {
@@ -134,7 +134,8 @@ def parse_movie(self, movie):
             _sql = """update movie set
                         rating = %(rating)s,
                         imdb_rating = %(imdb_rating)s,
-                        update_time = %(update_time)s
+                        update_time = %(update_time)s,
+                        is_deleted = %(is_deleted)s
                       where id = %(id)s
                    """
             cursor.execute(_sql, movie_data)
@@ -287,7 +288,7 @@ def parse_tv(self, tv):
         tv_data['imdb_id'] = tv['imdb_id']
         tv_data['imdb_rating'] = ''
         tv_data['update_time'] = datetime.datetime.now()
-        tv_data['is_deleted'] = int(tv.get('active', 0))
+        tv_data['is_deleted'] = not bool(int(tv.get('active')))
 
         try:
             response = requests.get(IMDB_PAGE_URL % tv['imdb_id'], headers=headers)
@@ -317,7 +318,8 @@ def parse_tv(self, tv):
                         poster = %(poster)s,
                         rating = %(rating)s,
                         imdb_rating = %(imdb_rating)s,
-                        release_time = %(release_time)s
+                        release_time = %(release_time)s,
+                        is_deleted = %(is_deleted)s
                       where id = %(id)s
                    """
             cursor.execute(_sql, tv_data)
