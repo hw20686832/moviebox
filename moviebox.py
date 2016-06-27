@@ -114,11 +114,11 @@ def parse_movie(self, movie):
              poster, rating, imdb_id, imdb_rating,
              update_time, release_time, play_time, is_deleted)
            values(
-             %(id)s, %(title)s, %(description)s,
-             %(year)s, %(poster)s, %(rating)s,
-             %(imdb_id)s, %(imdb_rating)s,
-             %(update_time)s, %(release_time)s, %(play_time)s,
-             %(is_deleted)s)
+             :id, :title, :description,
+             :year, :poster, :rating,
+             :imdb_id, :imdb_rating,
+             :update_time, :release_time, :play_time,
+             :is_deleted)
           """
 
     try:
@@ -128,11 +128,11 @@ def parse_movie(self, movie):
             raise e
 
         _sql = """update movie set
-                    rating = %(rating)s,
-                    imdb_rating = %(imdb_rating)s,
-                    update_time = %(update_time)s,
-                    is_deleted = %(is_deleted)s
-                  where id = %(id)s
+                    rating = :rating,
+                    imdb_rating = :imdb_rating,
+                    update_time = :update_time,
+                    is_deleted = :is_deleted
+                  where id = :id
                """
         session.execute(_sql, movie_data)
     else:
@@ -230,7 +230,7 @@ def parse_tv(self, tv):
         sql = """insert into tv_season(
                    tv_id, banner, description, seq)
                  values(
-                   %(tv_id)s, %(banner)s, %(description)s, %(seq)s)
+                   :tv_id, :banner, :description, :seq)
               """
         try:
             _rs = session.execute(sql, season_data)
@@ -239,7 +239,7 @@ def parse_tv(self, tv):
                 raise e
 
             _sql = """select id from tv_season
-                        where tv_id = %(tv_id)s and seq = %(seq)s
+                        where tv_id = :tv_id and seq = :seq
                    """
             _rs = session.execute(_sql, season_data)
             season_id = _rs.fetchone()[0]
@@ -262,8 +262,8 @@ def parse_tv(self, tv):
                            tv_id, season_id, description,
                            title, pic, seq)
                          values(
-                           %(tv_id)s, %(season_id)s, %(description)s,
-                           %(title)s, %(pic)s, %(seq)s)
+                           :tv_id, :season_id, :description,
+                           :title, :pic, :seq)
                       """
 
                 try:
@@ -302,9 +302,9 @@ def parse_tv(self, tv):
     sql = """insert into tv(
                id, title, description, poster, rating,
                banner, banner_mini, imdb_id, imdb_rating, release_time)
-             values(%(id)s, %(title)s, %(description)s, %(poster)s,
-               %(rating)s, %(banner)s, %(banner_mini)s, %(imdb_id)s,
-               %(imdb_rating)s, %(release_time)s)
+             values(:id, :title, :description, :poster,
+               :rating, :banner, :banner_mini, :imdb_id,
+               :imdb_rating, :release_time)
           """
     try:
         session.execute(sql, tv_data)
@@ -313,12 +313,12 @@ def parse_tv(self, tv):
             raise e
 
         _sql = """update tv set
-                    poster = %(poster)s,
-                    rating = %(rating)s,
-                    imdb_rating = %(imdb_rating)s,
-                    release_time = %(release_time)s,
-                    is_deleted = %(is_deleted)s
-                  where id = %(id)s
+                    poster = :poster,
+                    rating = :rating,
+                    imdb_rating = :imdb_rating,
+                    release_time = :release_time,
+                    is_deleted = :is_deleted
+                  where id = :id
                """
         session.execute(_sql, tv_data)
     else:
@@ -360,7 +360,7 @@ def parse_trailer(self, trailer):
         vid = t['link']
         t['link'] = "video/trailer/%s.mp4" % vid
         sql = """insert into trailer_source(id, trailer_id, create_date, link)
-                   values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
+                   values(:id, :trailer_id, :date, :link)"""
         try:
             session.execute(sql, t)
         except IntegrityError as e:
@@ -373,8 +373,8 @@ def parse_trailer(self, trailer):
     sql = """insert into trailer(
                id, title, description, poster, rating,
                poster_hires, release_time)
-             values(%(id)s, %(title)s, %(description)s, %(poster)s,
-               %(rating)s, %(poster_hires)s, %(release_time)s)
+             values(:id, :title, :description, :poster,
+               :rating, :poster_hires, :release_time)
           """
     trailer.update(trailer_data)
     try:
@@ -385,8 +385,8 @@ def parse_trailer(self, trailer):
 
         # Rating must up to date
         sql = """update trailer
-                   set rating = %(rating)s
-                 where id = %(id)s
+                   set rating = :rating
+                 where id = :id
               """
         session.execute(sql, trailer)
     else:
@@ -403,7 +403,7 @@ def download_video(self, vid):
     """Download Video from youtube"""
     opts = {
         'format': 'mp4',
-        'outtmpl': u"tmp/%(id)s.%(ext)s",
+        'outtmpl': u"tmp/:id.:ext",
     }
     try:
         with youtube_dl.YoutubeDL(opts) as ydl:
@@ -457,7 +457,7 @@ def download_imdb_trailer(self, movie_id):
                 raise Exception("Upload failure!")
 
             sql = """insert into trailer_source(movie_id, imdb_id, create_date, link)
-                     values(%(movie_id)s, %(imdb_id)s, %(date)s, %(link)s)
+                     values(:movie_id, :imdb_id, :date, :link)
                   """
             data = {'movie_id': imdb_id, 'imdb_id': vid, 'create_date': ''}
             session.execute(sql, data)
