@@ -319,6 +319,7 @@ def parse_tv(self, tv):
     tv_data['is_deleted'] = not bool(int(tv.get('active')))
 
     try:
+        self.log.error("Error imdb page: %s" % tv['imdb_id'])
         response = requests.get(IMDB_PAGE_URL % tv['imdb_id'],
                                 headers=headers)
     except requests.ConnectionError, exc:
@@ -500,7 +501,7 @@ def download_imdb_trailer(self, movie_id):
             sql = """insert into trailer_source(movie_id, imdb_id, create_date, link)
                      values(:movie_id, :imdb_id, :date, :link)
                   """
-            data = {'movie_id': imdb_id, 'imdb_id': vid, 'create_date': ''}
+            data = {'movie_id': movie_id, 'imdb_id': vid, 'create_date': ''}
             session.execute(sql, data)
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
