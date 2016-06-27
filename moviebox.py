@@ -156,7 +156,7 @@ def parse_movie(self, movie):
                         raise e
 
                     _rs = cursor.execute("select id from distributor_trans where imdb_id = %s", (imdb_id, ))
-                    dist_id = _rs[0][0]
+                    dist_id = _rs.fetchone()[0]
                 else:
                     dist_id = _rs.lastrowid
 
@@ -176,7 +176,7 @@ def parse_movie(self, movie):
                         raise e
 
                     _rs = cursor.execute("select id from director_trans where imdb_id = %s", (imdb_id, ))
-                    director_id = _rs[0][0]
+                    director_id = _rs.fetchone()[0]
                 else:
                     director_id = _rs.lastrowid
 
@@ -196,7 +196,7 @@ def parse_movie(self, movie):
                         raise e
 
                     _rs = cursor.execute("select id from actor_trans where imdb_id = %s", (imdb_id, ))
-                    actor_id = _rs[0][0]
+                    actor_id = _rs.fetchone()[0]
                 else:
                     actor_id = _rs.lastrowid
 
@@ -236,8 +236,7 @@ def parse_tv(self, tv):
                          where tv_id = %(tv_id)s and seq = %(seq)s
                       """
                 _rs = cursor.execute(_sql, season_data)
-                _data = _rs[0][0]
-                season_id = _data[0]
+                season_id = _rs.fetchone()[0]
             else:
                 season_id = _rs.lastrowid
 
