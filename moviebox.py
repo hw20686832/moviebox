@@ -138,74 +138,91 @@ def parse_movie(self, movie):
     else:
         # Save category
         for cat in movie['cats'].split('#'):
-            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
+            sql = "insert into category(id, bind_id, media_type) values(:cate_id, :bind_id, 0)"
             if cat:
-                session.execute(sql, (int(cat), int(movie['id']), 0))
+                session.execute(
+                    sql,
+                    {'cate_id': int(cat),
+                     'bind_id': int(movie['id'])}
+                )
 
         # Save recommend
         for rec in movie_data['recommend']:
-            sql = "insert into recommend values(%s, %s)"
-            session.execute(sql, (int(rec), int(movie['id'])))
+            sql = "insert into recommend values(:rec_id, :bind_id)"
+            session.execute(
+                sql,
+                {'rec_id': int(rec), 'bind_id': int(movie['id'])}
+            )
 
         # Save distributors
         distributors = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/span[@itemprop='name']/text()")
         urls = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/@href")
         distributor_map = zip(distributors, [url.split('/company/')[1].split('?')[0] for url in urls])
         for name, imdb_id in distributor_map:
-            sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
+            sql = "insert into distributor_trans(name, imdb_id) values(:name, :imdb_id)"
             try:
-                _rs = session.execute(sql, (name, imdb_id))
+                _rs = session.execute(sql, {'name': name, 'imdb_id': imdb_id})
             except IntegrityError as e:
                 if e.orig[0] != 1062:
                     raise e
 
-                _rs = session.execute("select id from distributor_trans where imdb_id = %s", (imdb_id, ))
+                _rs = session.execute("select id from distributor_trans where imdb_id = :imdb_id", {'imdb_id': imdb_id})
                 dist_id = _rs.fetchone()[0]
             else:
                 dist_id = _rs.lastrowid
 
-            sql = "insert into distributor(id, bind_id) values(%s, %s)"
-            session.execute(sql, (dist_id, int(movie['id'])))
+            sql = "insert into distributor(id, bind_id) values(:dist_id, :bind_id)"
+            session.execute(
+                sql,
+                {'dist_id': dist_id,
+                 'bind_id': int(movie['id'])}
+            )
 
         # Save directors
         directors = root.xpath("//span[@itemprop='director']/a/span[@itemprop='name']/text()")
         urls = root.xpath("//span[@itemprop='director']/a/@href")
-        director_map = zip(directors, [url.split('/name/')[1].split('?')[0] for url in urls])
+        director_map = zip(directors,
+                           [url.split('/name/')[1].split('?')[0]
+                            for url in urls])
         for name, imdb_id in director_map:
-            sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
+            sql = "insert into director_trans(name, imdb_id) values(:name, :imdb_id)"
             try:
-                _rs = session.execute(sql, (name, imdb_id))
+                _rs = session.execute(sql, {'name': name, 'imdb_id': imdb_id})
             except IntegrityError as e:
                 if e.orig[0] != 1062:
                     raise e
 
-                _rs = session.execute("select id from director_trans where imdb_id = %s", (imdb_id, ))
+                _rs = session.execute("select id from director_trans where imdb_id = :imdb_id", {'imdb_id': imdb_id})
                 director_id = _rs.fetchone()[0]
             else:
                 director_id = _rs.lastrowid
 
-            sql = "insert into director(id, bind_id) values(%s, %s)"
-            session.execute(sql, (director_id, int(movie['id'])))
+            sql = "insert into director(id, bind_id) values(:dire_id, :bind_id)"
+            session.execute(
+                sql,
+                {'dire_id': director_id, 'bind_id': int(movie['id'])}
+            )
 
         # Save actor
         actors = root.xpath("//span[@itemprop='actors']/a/span[@itemprop='name']/text()")
         urls = root.xpath("//span[@itemprop='actors']/a/@href")
         actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
         for name, imdb_id in actor_map:
-            sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
+            sql = "insert into actor_trans(name, imdb_id) values(:name, :imdb_id)"
             try:
-                _rs = session.execute(sql, (name, imdb_id))
+                _rs = session.execute(sql, {'name': name, 'imdb_id': imdb_id})
             except IntegrityError as e:
                 if e.orig[0] != 1062:
                     raise e
 
-                _rs = session.execute("select id from actor_trans where imdb_id = %s", (imdb_id, ))
+                _rs = session.execute("select id from actor_trans where imdb_id = :imdb_id", {'imdb_id': imdb_id})
                 actor_id = _rs.fetchone()[0]
             else:
                 actor_id = _rs.lastrowid
 
-            sql = "insert into actor(id, bind_id) values(%s, %s)"
-            session.execute(sql, (actor_id, int(movie['id'])))
+            sql = "insert into actor(id, bind_id) values(:actor_id, :bind_id)"
+            session.execute(sql,
+                            {'actor_id': actor_id, 'bind_id': int(movie['id'])})
 
 
 @app.task(bind=True, max_retries=10)
@@ -324,10 +341,13 @@ def parse_tv(self, tv):
     else:
         for cat in tv['cats'].split('#'):
             sql = """insert into category(id, bind_id, media_type)
-                       values(%s, %s, %s)
+                       values(:cate_id, :bind_id, 2)
                   """
             if cat:
-                session.execute(sql, (int(cat), int(tv['id']), 2))
+                session.execute(
+                    sql,
+                    {'cate_id': int(cat), 'bind_id': int(tv['id'])}
+                )
 
 
 @app.task(bind=True, max_retries=10)
@@ -392,10 +412,13 @@ def parse_trailer(self, trailer):
     else:
         for cat in trailer_data['cats'].split('#'):
             sql = """insert into category(id, bind_id, media_type)
-                     values(%s, %s, %s)
+                     values(:cate_id, :bind_id, 1)
                   """
             if cat:
-                session.execute(sql, (int(cat), int(trailer['id']), 1))
+                session.execute(
+                    sql,
+                    {'cate_id': int(cat), 'bind_id': int(trailer['id'])}
+                )
 
 
 @app.task(bind=True, max_retries=10)
@@ -503,9 +526,9 @@ def schedule():
     cates = json.loads(zf.read('cats.json'))
 
     for i, name in cates.items():
-        sql = "insert into category_trans(id, text_name) values(%s, %s)"
+        sql = "insert into category_trans(id, text_name) values(:id, :name)"
         try:
-            session.execute(sql, (int(i), name))
+            session.execute(sql, {'id': int(i), 'name': name})
         except IntegrityError as e:
             if e.orig[0] != 1062:
                 raise e
