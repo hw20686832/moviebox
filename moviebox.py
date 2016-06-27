@@ -109,16 +109,17 @@ def parse_movie(self, movie):
     except:
         movie_data['play_time'] = None
 
-    sql = "insert into movie( \
-             id, title, description, year, \
-             poster, rating, imdb_id, imdb_rating, \
-             update_time, release_time, play_time, is_deleted) \
-           values(\
-             %(id)s, %(title)s, %(description)s, \
-             %(year)s, %(poster)s, %(rating)s, \
-             %(imdb_id)s, %(imdb_rating)s, \
-             %(update_time)s, %(release_time)s, %(play_time)s, \
-             %(is_deleted)s)"
+    sql = """insert into movie(
+             id, title, description, year,
+             poster, rating, imdb_id, imdb_rating,
+             update_time, release_time, play_time, is_deleted)
+           values(
+             %(id)s, %(title)s, %(description)s,
+             %(year)s, %(poster)s, %(rating)s,
+             %(imdb_id)s, %(imdb_rating)s,
+             %(update_time)s, %(release_time)s, %(play_time)s,
+             %(is_deleted)s)
+          """
 
     try:
         session.execute(sql, movie_data)
