@@ -63,8 +63,10 @@ celery.platforms.C_FORCE_ROOT = True
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
            "Host": "sbfunapi.cc", "Connection": "Keep-Alive"}
 
-engine = create_engine(u"mysql://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db)s" % settings.MYSQL_CONF,
-                       encoding='utf-8', echo=True)
+engine = create_engine(
+    u"mysql://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db)s" % settings.MYSQL_CONF,
+    encoding='utf-8'
+)
 
 
 @app.task(bind=True, max_retries=10)
