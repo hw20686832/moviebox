@@ -19,6 +19,7 @@ import requests
 import youtube_dl
 from lxml import html
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
 import settings
@@ -68,9 +69,12 @@ engine = create_engine(
     encoding='utf-8'
 )
 
+Session = sessionmaker(bind=engine)
+
 
 @app.task(bind=True, max_retries=10)
 def parse_movie(self, movie):
+    session = Session()
     try:
         response = requests.get(MOVIE_DETAIL_URL % movie['id'],
                                 headers=headers)
@@ -105,7 +109,7 @@ def parse_movie(self, movie):
     except:
         movie_data['play_time'] = None
 
-    with engine.begin() as cursor:
+    with session.begin() as cursor:
         sql = "insert into movie( \
                  id, title, description, year, \
                  poster, rating, imdb_id, imdb_rating, \
@@ -206,7 +210,9 @@ def parse_movie(self, movie):
 
 @app.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
-    with engine.begin() as cursor:
+    session = Session()
+
+    with session.begin() as cursor:
         for i in range(1, int(tv.get('seasons', 0))+1):
             try:
                 response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
@@ -326,6 +332,8 @@ def parse_tv(self, tv):
 
 @app.task(bind=True, max_retries=10)
 def parse_trailer(self, trailer):
+    session = Session()
+
     headers = {"Host": "sbfunapi.cc",
                "Connection": "keep-alive",
                "Accept": "*/*",
@@ -347,7 +355,7 @@ def parse_trailer(self, trailer):
         except:
             trailer_data['release_time'] = None
 
-    with engine.begin() as cursor:
+    with session.begin() as cursor:
         for t in trailer_data['trailers']:
             t['trailer_id'] = trailer['id']
             vid = t['link']
@@ -420,8 +428,10 @@ def download_video(self, vid):
 @app.task(bind=True, max_retries=10)
 def download_imdb_trailer(self, movie_id):
     """Download Video from imdb.com"""
+    session = Session()
+
     try:
-        with engine.begin() as cursor:
+        with session.begin() as cursor:
             response = requests.get(IMDB_TRAILER_URL % movie_id)
             root = html.fromstring(response.content)
             for a in root.xpath("//div[@class='search-results']/ol/li/div/a"):
@@ -491,8 +501,10 @@ def schedule():
     print("Trailer count %d" % len(trailers))
 
     # Save category names
+    session = Session()
+
     cates = json.loads(zf.read('cats.json'))
-    with engine.begin() as cursor:
+    with session.begin() as cursor:
         for i, name in cates.items():
             sql = "insert into category_trans(id, text_name) values(%s, %s)"
             try:
