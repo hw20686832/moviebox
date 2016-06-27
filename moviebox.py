@@ -322,11 +322,13 @@ def parse_tv(self, tv):
     tv_data['is_deleted'] = not bool(int(tv.get('active')))
 
     try:
-        logger.error("Error imdb page: %s" % tv['imdb_id'])
         response = requests.get(IMDB_PAGE_URL % tv['imdb_id'],
                                 headers=headers)
     except requests.ConnectionError, exc:
         raise self.retry(exc=exc, countdown=60)
+    except:
+        logger.error("Error imdb page: %s" % tv['imdb_id'])
+        raise
     root = html.fromstring(response.content)
     try:
         release_date = root.xpath("//div[@id='titleDetails']/div/h4[text()='Release Date:']/following-sibling::text()")[0]
