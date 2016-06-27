@@ -109,146 +109,144 @@ def parse_movie(self, movie):
     except:
         movie_data['play_time'] = None
 
-    with session.begin() as cursor:
-        sql = "insert into movie( \
-                 id, title, description, year, \
-                 poster, rating, imdb_id, imdb_rating, \
-                 update_time, release_time, play_time, is_deleted) \
-               values(\
-                 %(id)s, %(title)s, %(description)s, \
-                 %(year)s, %(poster)s, %(rating)s, \
-                 %(imdb_id)s, %(imdb_rating)s, \
-                 %(update_time)s, %(release_time)s, %(play_time)s, \
-                 %(is_deleted)s)"
+    sql = "insert into movie( \
+             id, title, description, year, \
+             poster, rating, imdb_id, imdb_rating, \
+             update_time, release_time, play_time, is_deleted) \
+           values(\
+             %(id)s, %(title)s, %(description)s, \
+             %(year)s, %(poster)s, %(rating)s, \
+             %(imdb_id)s, %(imdb_rating)s, \
+             %(update_time)s, %(release_time)s, %(play_time)s, \
+             %(is_deleted)s)"
 
-        try:
-            cursor.execute(sql, movie_data)
-        except IntegrityError as e:
-            if e.orig[0] != 1062:
-                raise e
+    try:
+        session.execute(sql, movie_data)
+    except IntegrityError as e:
+        if e.orig[0] != 1062:
+            raise e
 
-            _sql = """update movie set
-                        rating = %(rating)s,
-                        imdb_rating = %(imdb_rating)s,
-                        update_time = %(update_time)s,
-                        is_deleted = %(is_deleted)s
-                      where id = %(id)s
-                   """
-            cursor.execute(_sql, movie_data)
-        else:
-            # Save category
-            for cat in movie['cats'].split('#'):
-                sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
-                if cat:
-                    cursor.execute(sql, (int(cat), int(movie['id']), 0))
+        _sql = """update movie set
+                    rating = %(rating)s,
+                    imdb_rating = %(imdb_rating)s,
+                    update_time = %(update_time)s,
+                    is_deleted = %(is_deleted)s
+                  where id = %(id)s
+               """
+        session.execute(_sql, movie_data)
+    else:
+        # Save category
+        for cat in movie['cats'].split('#'):
+            sql = "insert into category(id, bind_id, media_type) values(%s, %s, %s)"
+            if cat:
+                session.execute(sql, (int(cat), int(movie['id']), 0))
 
-            # Save recommend
-            for rec in movie_data['recommend']:
-                sql = "insert into recommend values(%s, %s)"
-                cursor.execute(sql, (int(rec), int(movie['id'])))
+        # Save recommend
+        for rec in movie_data['recommend']:
+            sql = "insert into recommend values(%s, %s)"
+            session.execute(sql, (int(rec), int(movie['id'])))
 
-            # Save distributors
-            distributors = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/span[@itemprop='name']/text()")
-            urls = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/@href")
-            distributor_map = zip(distributors, [url.split('/company/')[1].split('?')[0] for url in urls])
-            for name, imdb_id in distributor_map:
-                sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
-                try:
-                    _rs = cursor.execute(sql, (name, imdb_id))
-                except IntegrityError as e:
-                    if e.orig[0] != 1062:
-                        raise e
+        # Save distributors
+        distributors = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/span[@itemprop='name']/text()")
+        urls = root.xpath("//span[@itemprop='creator' and @itemtype='http://schema.org/Organization']/a/@href")
+        distributor_map = zip(distributors, [url.split('/company/')[1].split('?')[0] for url in urls])
+        for name, imdb_id in distributor_map:
+            sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
+            try:
+                _rs = session.execute(sql, (name, imdb_id))
+            except IntegrityError as e:
+                if e.orig[0] != 1062:
+                    raise e
 
-                    _rs = cursor.execute("select id from distributor_trans where imdb_id = %s", (imdb_id, ))
-                    dist_id = _rs.fetchone()[0]
-                else:
-                    dist_id = _rs.lastrowid
+                _rs = session.execute("select id from distributor_trans where imdb_id = %s", (imdb_id, ))
+                dist_id = _rs.fetchone()[0]
+            else:
+                dist_id = _rs.lastrowid
 
-                sql = "insert into distributor(id, bind_id) values(%s, %s)"
-                cursor.execute(sql, (dist_id, int(movie['id'])))
+            sql = "insert into distributor(id, bind_id) values(%s, %s)"
+            session.execute(sql, (dist_id, int(movie['id'])))
 
-            # Save directors
-            directors = root.xpath("//span[@itemprop='director']/a/span[@itemprop='name']/text()")
-            urls = root.xpath("//span[@itemprop='director']/a/@href")
-            director_map = zip(directors, [url.split('/name/')[1].split('?')[0] for url in urls])
-            for name, imdb_id in director_map:
-                sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
-                try:
-                    _rs = cursor.execute(sql, (name, imdb_id))
-                except IntegrityError as e:
-                    if e.orig[0] != 1062:
-                        raise e
+        # Save directors
+        directors = root.xpath("//span[@itemprop='director']/a/span[@itemprop='name']/text()")
+        urls = root.xpath("//span[@itemprop='director']/a/@href")
+        director_map = zip(directors, [url.split('/name/')[1].split('?')[0] for url in urls])
+        for name, imdb_id in director_map:
+            sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
+            try:
+                _rs = session.execute(sql, (name, imdb_id))
+            except IntegrityError as e:
+                if e.orig[0] != 1062:
+                    raise e
 
-                    _rs = cursor.execute("select id from director_trans where imdb_id = %s", (imdb_id, ))
-                    director_id = _rs.fetchone()[0]
-                else:
-                    director_id = _rs.lastrowid
+                _rs = session.execute("select id from director_trans where imdb_id = %s", (imdb_id, ))
+                director_id = _rs.fetchone()[0]
+            else:
+                director_id = _rs.lastrowid
 
-                sql = "insert into director(id, bind_id) values(%s, %s)"
-                cursor.execute(sql, (director_id, int(movie['id'])))
+            sql = "insert into director(id, bind_id) values(%s, %s)"
+            session.execute(sql, (director_id, int(movie['id'])))
 
-            # Save actor
-            actors = root.xpath("//span[@itemprop='actors']/a/span[@itemprop='name']/text()")
-            urls = root.xpath("//span[@itemprop='actors']/a/@href")
-            actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
-            for name, imdb_id in actor_map:
-                sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
-                try:
-                    _rs = cursor.execute(sql, (name, imdb_id))
-                except IntegrityError as e:
-                    if e.orig[0] != 1062:
-                        raise e
+        # Save actor
+        actors = root.xpath("//span[@itemprop='actors']/a/span[@itemprop='name']/text()")
+        urls = root.xpath("//span[@itemprop='actors']/a/@href")
+        actor_map = zip(actors, [url.split('/name/')[1].split('?')[0] for url in urls])
+        for name, imdb_id in actor_map:
+            sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
+            try:
+                _rs = session.execute(sql, (name, imdb_id))
+            except IntegrityError as e:
+                if e.orig[0] != 1062:
+                    raise e
 
-                    _rs = cursor.execute("select id from actor_trans where imdb_id = %s", (imdb_id, ))
-                    actor_id = _rs.fetchone()[0]
-                else:
-                    actor_id = _rs.lastrowid
+                _rs = session.execute("select id from actor_trans where imdb_id = %s", (imdb_id, ))
+                actor_id = _rs.fetchone()[0]
+            else:
+                actor_id = _rs.lastrowid
 
-                sql = "insert into actor(id, bind_id) values(%s, %s)"
-                cursor.execute(sql, (actor_id, int(movie['id'])))
+            sql = "insert into actor(id, bind_id) values(%s, %s)"
+            session.execute(sql, (actor_id, int(movie['id'])))
 
 
 @app.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
     session = Session()
 
-    with session.begin() as cursor:
-        for i in range(1, int(tv.get('seasons', 0))+1):
-            try:
-                response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
-                                        headers=headers)
-            except requests.ConnectionError, exc:
-                raise self.retry(exc=exc, countdown=60)
-            season = response.json()
+    for i in range(1, int(tv.get('seasons', 0))+1):
+        try:
+            response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
+                                    headers=headers)
+        except requests.ConnectionError, exc:
+            raise self.retry(exc=exc, countdown=60)
+        season = response.json()
 
-            season_data = {}
-            season_data['tv_id'] = int(tv['id'])
-            season_data['seq'] = str(i)
-            season_data['banner'] = season['banner']
-            season_data['description'] = season['description']
-            season_data['update_time'] = datetime.datetime.now()
+        season_data = {}
+        season_data['tv_id'] = int(tv['id'])
+        season_data['seq'] = str(i)
+        season_data['banner'] = season['banner']
+        season_data['description'] = season['description']
+        season_data['update_time'] = datetime.datetime.now()
 
-            sql = """insert into tv_season(
-                       tv_id, banner, description, seq)
-                     values(%(tv_id)s, %(banner)s, %(description)s, %(seq)s)
-                  """
-            try:
-                _rs = cursor.execute(sql, season_data)
-            except IntegrityError as e:
-                if e.orig[0] != 1062:
-                    raise e
+        sql = """insert into tv_season(
+                   tv_id, banner, description, seq)
+                 values(%(tv_id)s, %(banner)s, %(description)s, %(seq)s)
+              """
+        try:
+            _rs = session.execute(sql, season_data)
+        except IntegrityError as e:
+            if e.orig[0] != 1062:
+                raise e
 
-                _sql = """select id from tv_season
-                         where tv_id = %(tv_id)s and seq = %(seq)s
-                      """
-                _rs = cursor.execute(_sql, season_data)
-                season_id = _rs.fetchone()[0]
-            else:
-                season_id = _rs.lastrowid
+            _sql = """select id from tv_season
+                        where tv_id = %(tv_id)s and seq = %(seq)s
+                   """
+            _rs = session.execute(_sql, season_data)
+            season_id = _rs.fetchone()[0]
+        else:
+            season_id = _rs.lastrowid
 
-            n = 1
-            if type(season['thumbs']) is list:
-                season['thumbs'] = {}
+        n = 1
+        if type(season['thumbs']) is list:
+            season['thumbs'] = {}
             for seq, pic in season['thumbs'].iteritems():
                 item = {}
                 item['tv_id'] = int(tv['id'])
@@ -267,31 +265,31 @@ def parse_tv(self, tv):
                       """
 
                 try:
-                    cursor.execute(sql, item)
+                    session.execute(sql, item)
                 except IntegrityError as e:
                     if e.orig[0] != 1062:
                         raise e
                 finally:
                     n += 1
 
-        tv_data = {}
-        tv_data['id'] = tv['id']
-        tv_data['title'] = tv['title']
-        tv_data['description'] = ''
-        tv_data['poster'] = tv['poster']
-        tv_data['rating'] = int(tv['rating'] or 0)
-        tv_data['banner'] = tv['banner']
-        tv_data['banner_mini'] = tv['banner_mini']
-        tv_data['imdb_id'] = tv['imdb_id']
-        tv_data['imdb_rating'] = ''
-        tv_data['update_time'] = datetime.datetime.now()
-        tv_data['is_deleted'] = not bool(int(tv.get('active')))
+    tv_data = {}
+    tv_data['id'] = tv['id']
+    tv_data['title'] = tv['title']
+    tv_data['description'] = ''
+    tv_data['poster'] = tv['poster']
+    tv_data['rating'] = int(tv['rating'] or 0)
+    tv_data['banner'] = tv['banner']
+    tv_data['banner_mini'] = tv['banner_mini']
+    tv_data['imdb_id'] = tv['imdb_id']
+    tv_data['imdb_rating'] = ''
+    tv_data['update_time'] = datetime.datetime.now()
+    tv_data['is_deleted'] = not bool(int(tv.get('active')))
 
-        try:
-            response = requests.get(IMDB_PAGE_URL % tv['imdb_id'],
-                                    headers=headers)
-        except requests.ConnectionError, exc:
-            raise self.retry(exc=exc, countdown=60)
+    try:
+        response = requests.get(IMDB_PAGE_URL % tv['imdb_id'],
+                                headers=headers)
+    except requests.ConnectionError, exc:
+        raise self.retry(exc=exc, countdown=60)
         root = html.fromstring(response.content)
         try:
             release_date = root.xpath("//div[@id='titleDetails']/div/h4[text()='Release Date:']/following-sibling::text()")[0]
@@ -299,35 +297,35 @@ def parse_tv(self, tv):
         except:
             tv_data['release_time'] = None
 
-        sql = """insert into tv(
-                   id, title, description, poster, rating,
-                   banner, banner_mini, imdb_id, imdb_rating, release_time)
-                 values(%(id)s, %(title)s, %(description)s, %(poster)s,
-                   %(rating)s, %(banner)s, %(banner_mini)s, %(imdb_id)s,
-                   %(imdb_rating)s, %(release_time)s)
-              """
-        try:
-            cursor.execute(sql, tv_data)
-        except IntegrityError as e:
-            if e.orig[0] != 1062:
-                raise e
+    sql = """insert into tv(
+               id, title, description, poster, rating,
+               banner, banner_mini, imdb_id, imdb_rating, release_time)
+             values(%(id)s, %(title)s, %(description)s, %(poster)s,
+               %(rating)s, %(banner)s, %(banner_mini)s, %(imdb_id)s,
+               %(imdb_rating)s, %(release_time)s)
+          """
+    try:
+        session.execute(sql, tv_data)
+    except IntegrityError as e:
+        if e.orig[0] != 1062:
+            raise e
 
-            _sql = """update tv set
-                        poster = %(poster)s,
-                        rating = %(rating)s,
-                        imdb_rating = %(imdb_rating)s,
-                        release_time = %(release_time)s,
-                        is_deleted = %(is_deleted)s
-                      where id = %(id)s
-                   """
-            cursor.execute(_sql, tv_data)
-        else:
-            for cat in tv['cats'].split('#'):
-                sql = """insert into category(id, bind_id, media_type)
-                         values(%s, %s, %s)
-                      """
-                if cat:
-                    cursor.execute(sql, (int(cat), int(tv['id']), 2))
+        _sql = """update tv set
+                    poster = %(poster)s,
+                    rating = %(rating)s,
+                    imdb_rating = %(imdb_rating)s,
+                    release_time = %(release_time)s,
+                    is_deleted = %(is_deleted)s
+                  where id = %(id)s
+               """
+        session.execute(_sql, tv_data)
+    else:
+        for cat in tv['cats'].split('#'):
+            sql = """insert into category(id, bind_id, media_type)
+                       values(%s, %s, %s)
+                  """
+            if cat:
+                session.execute(sql, (int(cat), int(tv['id']), 2))
 
 
 @app.task(bind=True, max_retries=10)
@@ -355,48 +353,47 @@ def parse_trailer(self, trailer):
         except:
             trailer_data['release_time'] = None
 
-    with session.begin() as cursor:
-        for t in trailer_data['trailers']:
-            t['trailer_id'] = trailer['id']
-            vid = t['link']
-            t['link'] = "video/trailer/%s.mp4" % vid
-            sql = """insert into trailer_source(id, trailer_id, create_date, link)
-                       values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
-            try:
-                cursor.execute(sql, t)
-            except IntegrityError as e:
-                if e.orig[0] != 1062:
-                    raise e
-            else:
-                # The link is Youtube video ID, put it into download queue.
-                download_video.delay(vid)
-
-        sql = """insert into trailer(
-                   id, title, description, poster, rating,
-                   poster_hires, release_time)
-                 values(%(id)s, %(title)s, %(description)s, %(poster)s,
-                   %(rating)s, %(poster_hires)s, %(release_time)s)
-              """
-        trailer.update(trailer_data)
+    for t in trailer_data['trailers']:
+        t['trailer_id'] = trailer['id']
+        vid = t['link']
+        t['link'] = "video/trailer/%s.mp4" % vid
+        sql = """insert into trailer_source(id, trailer_id, create_date, link)
+                   values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
         try:
-            cursor.execute(sql, trailer)
+            session.execute(sql, t)
         except IntegrityError as e:
             if e.orig[0] != 1062:
                 raise e
-
-            # Rating must up to date
-            sql = """update trailer
-                       set rating = %(rating)s
-                     where id = %(id)s
-                  """
-            cursor.execute(sql, trailer)
         else:
-            for cat in trailer_data['cats'].split('#'):
-                sql = """insert into category(id, bind_id, media_type)
-                         values(%s, %s, %s)
-                      """
-                if cat:
-                    cursor.execute(sql, (int(cat), int(trailer['id']), 1))
+            # The link is Youtube video ID, put it into download queue.
+            download_video.delay(vid)
+
+    sql = """insert into trailer(
+               id, title, description, poster, rating,
+               poster_hires, release_time)
+             values(%(id)s, %(title)s, %(description)s, %(poster)s,
+               %(rating)s, %(poster_hires)s, %(release_time)s)
+          """
+    trailer.update(trailer_data)
+    try:
+        session.execute(sql, trailer)
+    except IntegrityError as e:
+        if e.orig[0] != 1062:
+            raise e
+
+        # Rating must up to date
+        sql = """update trailer
+                   set rating = %(rating)s
+                 where id = %(id)s
+              """
+        session.execute(sql, trailer)
+    else:
+        for cat in trailer_data['cats'].split('#'):
+            sql = """insert into category(id, bind_id, media_type)
+                     values(%s, %s, %s)
+                  """
+            if cat:
+                session.execute(sql, (int(cat), int(trailer['id']), 1))
 
 
 @app.task(bind=True, max_retries=10)
@@ -431,38 +428,37 @@ def download_imdb_trailer(self, movie_id):
     session = Session()
 
     try:
-        with session.begin() as cursor:
-            response = requests.get(IMDB_TRAILER_URL % movie_id)
+        response = requests.get(IMDB_TRAILER_URL % movie_id)
+        root = html.fromstring(response.content)
+        for a in root.xpath("//div[@class='search-results']/ol/li/div/a"):
+            vid = a.xpath("./@data-video")[0]
+            vurl = a.xpath("./@href")[0]
+            vpic = a.xpath("./img/@src")[0]
+
+            response = requests.get(vurl)
+            container_url = root.xpath("//iframe[@id='video-player-container']/@src")[0].strip()
+            response = requests.get(container_url)
             root = html.fromstring(response.content)
-            for a in root.xpath("//div[@class='search-results']/ol/li/div/a"):
-                vid = a.xpath("./@data-video")[0]
-                vurl = a.xpath("./@href")[0]
-                vpic = a.xpath("./img/@src")[0]
+            data = root.xpath("//script[@class='imdb-player-data']/text()")[0]
+            vdata = json.loads(data)
+            for v in vdata['videoPlayerObject']['video']['videoInfoList']:
+                if v['videoMimeType'] == 'video/mp4':
+                    video_url = v['videoUrl']
+                    break
 
-                response = requests.get(vurl)
-                container_url = root.xpath("//iframe[@id='video-player-container']/@src")[0].strip()
-                response = requests.get(container_url)
-                root = html.fromstring(response.content)
-                data = root.xpath("//script[@class='imdb-player-data']/text()")[0]
-                vdata = json.loads(data)
-                for v in vdata['videoPlayerObject']['video']['videoInfoList']:
-                    if v['videoMimeType'] == 'video/mp4':
-                        video_url = v['videoUrl']
-                        break
+            response = requests.get(video_url)
+            filename = u"%s/%s.mp4" % (movie_id, vid)
+            files = [('file', (filename, StringIO.StringIO(response.content))), ]
+            response = requests.post("http://61.155.215.52:3000/upload",
+                                     files=files)
+            if response.content != 'ok':
+                raise Exception("Upload failure!")
 
-                response = requests.get(video_url)
-                filename = u"%s/%s.mp4" % (movie_id, vid)
-                files = [('file', (filename, StringIO.StringIO(response.content))), ]
-                response = requests.post("http://61.155.215.52:3000/upload",
-                                         files=files)
-                if response.content != 'ok':
-                    raise Exception("Upload failure!")
-
-                sql = """insert into trailer_source(movie_id, imdb_id, create_date, link)
-                         values(%(movie_id)s, %(imdb_id)s, %(date)s, %(link)s)
-                      """
-                data = {'movie_id': imdb_id, 'imdb_id': vid, 'create_date': ''}
-                cursor.execute(sql, data)
+            sql = """insert into trailer_source(movie_id, imdb_id, create_date, link)
+                     values(%(movie_id)s, %(imdb_id)s, %(date)s, %(link)s)
+                  """
+            data = {'movie_id': imdb_id, 'imdb_id': vid, 'create_date': ''}
+            session.execute(sql, data)
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
 
@@ -502,18 +498,18 @@ def schedule():
 
     # Save category names
     session = Session()
-
     cates = json.loads(zf.read('cats.json'))
-    with session.begin() as cursor:
-        for i, name in cates.items():
-            sql = "insert into category_trans(id, text_name) values(%s, %s)"
-            try:
-                cursor.execute(sql, (int(i), name))
-            except IntegrityError as e:
-                if e.orig[0] != 1062:
-                    raise e
-                continue
 
+    for i, name in cates.items():
+        sql = "insert into category_trans(id, text_name) values(%s, %s)"
+        try:
+            session.execute(sql, (int(i), name))
+        except IntegrityError as e:
+            if e.orig[0] != 1062:
+                raise e
+            continue
+
+    session.commit()
     zf.close()
 
 
