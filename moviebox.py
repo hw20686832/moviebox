@@ -70,11 +70,12 @@ engine = create_engine(
 )
 
 Session = sessionmaker(bind=engine)
+session = Session()
 
 
 @app.task(bind=True, max_retries=10)
 def parse_movie(self, movie):
-    session = Session()
+    #session = Session()
     try:
         response = requests.get(MOVIE_DETAIL_URL % movie['id'],
                                 headers=headers)
@@ -227,7 +228,7 @@ def parse_movie(self, movie):
 
 @app.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
-    session = Session()
+    #session = Session()
 
     for i in range(1, int(tv.get('seasons', 0))+1):
         try:
@@ -352,7 +353,7 @@ def parse_tv(self, tv):
 
 @app.task(bind=True, max_retries=10)
 def parse_trailer(self, trailer):
-    session = Session()
+    #session = Session()
 
     headers = {"Host": "sbfunapi.cc",
                "Connection": "keep-alive",
@@ -450,7 +451,7 @@ def download_video(self, vid):
 @app.task(bind=True, max_retries=10)
 def download_imdb_trailer(self, movie_id):
     """Download Video from imdb.com"""
-    session = Session()
+    #session = Session()
 
     try:
         response = requests.get(IMDB_TRAILER_URL % movie_id)
@@ -522,7 +523,7 @@ def schedule():
     print("Trailer count %d" % len(trailers))
 
     # Save category names
-    session = Session()
+    #session = Session()
     cates = json.loads(zf.read('cats.json'))
 
     for i, name in cates.items():
