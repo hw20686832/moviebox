@@ -83,7 +83,7 @@ def parse_movie(self, movie):
         raise self.retry(exc=exc, countdown=60)
     movie_data = response.json()
     movie_data['id'] = int(movie['id'])
-    movie_data['title'] = movie['title']
+    movie_data['title'] = movie['title'].encode('utf-8')
     movie_data['imdb_id'] = movie['imdb_id']
     movie_data['rating'] = int(movie['rating'] or 0)
     movie_data['year'] = movie['year']
@@ -162,7 +162,10 @@ def parse_movie(self, movie):
         for name, imdb_id in distributor_map:
             sql = "insert into distributor_trans(name, imdb_id) values(:name, :imdb_id)"
             try:
-                _rs = session.execute(sql, {'name': name, 'imdb_id': imdb_id})
+                _rs = session.execute(
+                    sql,
+                    {'name': name.encode('utf-8'), 'imdb_id': imdb_id}
+                )
             except IntegrityError as e:
                 if e.orig[0] != 1062:
                     raise e
@@ -188,7 +191,10 @@ def parse_movie(self, movie):
         for name, imdb_id in director_map:
             sql = "insert into director_trans(name, imdb_id) values(:name, :imdb_id)"
             try:
-                _rs = session.execute(sql, {'name': name, 'imdb_id': imdb_id})
+                _rs = session.execute(
+                    sql,
+                    {'name': name.encode('utf-8'), 'imdb_id': imdb_id}
+                )
             except IntegrityError as e:
                 if e.orig[0] != 1062:
                     raise e
@@ -211,7 +217,10 @@ def parse_movie(self, movie):
         for name, imdb_id in actor_map:
             sql = "insert into actor_trans(name, imdb_id) values(:name, :imdb_id)"
             try:
-                _rs = session.execute(sql, {'name': name, 'imdb_id': imdb_id})
+                _rs = session.execute(
+                    sql,
+                    {'name': name.encode('utf-8'), 'imdb_id': imdb_id}
+                )
             except IntegrityError as e:
                 if e.orig[0] != 1062:
                     raise e
@@ -222,8 +231,12 @@ def parse_movie(self, movie):
                 actor_id = _rs.lastrowid
 
             sql = "insert into actor(id, bind_id) values(:actor_id, :bind_id)"
-            session.execute(sql,
-                            {'actor_id': actor_id, 'bind_id': int(movie['id'])})
+            session.execute(
+                sql,
+                {'actor_id': actor_id, 'bind_id': int(movie['id'])}
+            )
+    finally:
+        session.commit()
 
 
 @app.task(bind=True, max_retries=10)
@@ -242,7 +255,7 @@ def parse_tv(self, tv):
         season_data['tv_id'] = int(tv['id'])
         season_data['seq'] = str(i)
         season_data['banner'] = season['banner']
-        season_data['description'] = season['description']
+        season_data['description'] = season['description'].encode('utf-8')
         season_data['update_time'] = datetime.datetime.now()
 
         sql = """insert into tv_season(
@@ -267,34 +280,34 @@ def parse_tv(self, tv):
         n = 1
         if type(season['thumbs']) is list:
             season['thumbs'] = {}
-            for seq, pic in season['thumbs'].iteritems():
-                item = {}
-                item['tv_id'] = int(tv['id'])
-                item['season_id'] = season_id
-                item["title"] = season['titles'][seq]
-                item['description'] = ''
-                item['pic'] = pic
-                item['seq'] = seq
+        for seq, pic in season['thumbs'].iteritems():
+            item = {}
+            item['tv_id'] = int(tv['id'])
+            item['season_id'] = season_id
+            item["title"] = season['titles'][seq].encode('utf-8')
+            item['description'] = ''
+            item['pic'] = pic
+            item['seq'] = seq
 
-                sql = """insert into tv_episode(
-                           tv_id, season_id, description,
-                           title, pic, seq)
-                         values(
-                           :tv_id, :season_id, :description,
-                           :title, :pic, :seq)
-                      """
+            sql = """insert into tv_episode(
+                       tv_id, season_id, description,
+                       title, pic, seq)
+                     values(
+                       :tv_id, :season_id, :description,
+                       :title, :pic, :seq)
+                  """
 
-                try:
-                    session.execute(sql, item)
-                except IntegrityError as e:
-                    if e.orig[0] != 1062:
-                        raise e
-                finally:
-                    n += 1
+            try:
+                session.execute(sql, item)
+            except IntegrityError as e:
+                if e.orig[0] != 1062:
+                    raise e
+            finally:
+                n += 1
 
     tv_data = {}
     tv_data['id'] = tv['id']
-    tv_data['title'] = tv['title']
+    tv_data['title'] = tv['title'].encode('utf-8')
     tv_data['description'] = ''
     tv_data['poster'] = tv['poster']
     tv_data['rating'] = int(tv['rating'] or 0)
@@ -349,6 +362,8 @@ def parse_tv(self, tv):
                     sql,
                     {'cate_id': int(cat), 'bind_id': int(tv['id'])}
                 )
+    finally:
+        session.commit()
 
 
 @app.task(bind=True, max_retries=10)
@@ -420,6 +435,8 @@ def parse_trailer(self, trailer):
                     sql,
                     {'cate_id': int(cat), 'bind_id': int(trailer['id'])}
                 )
+    finally:
+        session.commit()
 
 
 @app.task(bind=True, max_retries=10)
@@ -487,6 +504,8 @@ def download_imdb_trailer(self, movie_id):
             session.execute(sql, data)
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
+
+    session.commit()
 
     return filename, response.content
 
