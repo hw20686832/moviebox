@@ -150,7 +150,7 @@ def parse_movie(self, movie):
             for name, imdb_id in distributor_map:
                 sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
                 try:
-                    cursor.execute(sql, (name.encode('utf-8'), imdb_id))
+                    _rs = cursor.execute(sql, (name, imdb_id))
                 except IntegrityError as e:
                     if e.orig[0] != 1062:
                         raise e
@@ -158,7 +158,7 @@ def parse_movie(self, movie):
                     _rs = cursor.execute("select id from distributor_trans where imdb_id = %s", (imdb_id, ))
                     dist_id = _rs[0][0]
                 else:
-                    dist_id = cursor.lastrowid
+                    dist_id = _rs.lastrowid
 
                 sql = "insert into distributor(id, bind_id) values(%s, %s)"
                 cursor.execute(sql, (dist_id, int(movie['id'])))
@@ -170,7 +170,7 @@ def parse_movie(self, movie):
             for name, imdb_id in director_map:
                 sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
                 try:
-                    cursor.execute(sql, (name.encode('utf-8'), imdb_id))
+                    _rs = cursor.execute(sql, (name, imdb_id))
                 except IntegrityError as e:
                     if e.orig[0] != 1062:
                         raise e
@@ -178,7 +178,7 @@ def parse_movie(self, movie):
                     _rs = cursor.execute("select id from director_trans where imdb_id = %s", (imdb_id, ))
                     director_id = _rs[0][0]
                 else:
-                    director_id = cursor.lastrowid
+                    director_id = _rs.lastrowid
 
                 sql = "insert into director(id, bind_id) values(%s, %s)"
                 cursor.execute(sql, (director_id, int(movie['id'])))
@@ -190,7 +190,7 @@ def parse_movie(self, movie):
             for name, imdb_id in actor_map:
                 sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
                 try:
-                    cursor.execute(sql, (name.encode('utf-8'), imdb_id))
+                    _rs = cursor.execute(sql, (name, imdb_id))
                 except IntegrityError as e:
                     if e.orig[0] != 1062:
                         raise e
@@ -198,7 +198,7 @@ def parse_movie(self, movie):
                     _rs = cursor.execute("select id from actor_trans where imdb_id = %s", (imdb_id, ))
                     actor_id = _rs[0][0]
                 else:
-                    actor_id = cursor.lastrowid
+                    actor_id = _rs.lastrowid
 
                 sql = "insert into actor(id, bind_id) values(%s, %s)"
                 cursor.execute(sql, (actor_id, int(movie['id'])))
@@ -219,7 +219,7 @@ def parse_tv(self, tv):
             season_data['tv_id'] = int(tv['id'])
             season_data['seq'] = str(i)
             season_data['banner'] = season['banner']
-            season_data['description'] = season['description'].encode('utf-8')
+            season_data['description'] = season['description']
             season_data['update_time'] = datetime.datetime.now()
 
             sql = """insert into tv_season(
@@ -227,7 +227,7 @@ def parse_tv(self, tv):
                      values(%(tv_id)s, %(banner)s, %(description)s, %(seq)s)
                   """
             try:
-                cursor.execute(sql, season_data)
+                _rs = cursor.execute(sql, season_data)
             except IntegrityError as e:
                 if e.orig[0] != 1062:
                     raise e
@@ -239,7 +239,7 @@ def parse_tv(self, tv):
                 _data = _rs[0][0]
                 season_id = _data[0]
             else:
-                season_id = cursor.lastrowid
+                season_id = _rs.lastrowid
 
             n = 1
             if type(season['thumbs']) is list:
@@ -248,7 +248,7 @@ def parse_tv(self, tv):
                 item = {}
                 item['tv_id'] = int(tv['id'])
                 item['season_id'] = season_id
-                item["title"] = season['titles'][seq].encode('utf-8')
+                item["title"] = season['titles'][seq]
                 item['description'] = ''
                 item['pic'] = pic
                 item['seq'] = seq
@@ -271,7 +271,7 @@ def parse_tv(self, tv):
 
         tv_data = {}
         tv_data['id'] = tv['id']
-        tv_data['title'] = tv['title'].encode('utf-8')
+        tv_data['title'] = tv['title']
         tv_data['description'] = ''
         tv_data['poster'] = tv['poster']
         tv_data['rating'] = int(tv['rating'] or 0)
