@@ -118,7 +118,7 @@ def parse_movie(self, movie):
         try:
             cursor.execute(sql, movie_data)
         except IntegrityError as e:
-            if e[0] != 1062:
+            if e.orig[0] != 1062:
                 raise e
 
             _sql = """update movie set
@@ -150,7 +150,7 @@ def parse_movie(self, movie):
                 try:
                     cursor.execute(sql, (name.encode('utf-8'), imdb_id))
                 except IntegrityError as e:
-                    if e[0] != 1062:
+                    if e.orig[0] != 1062:
                         raise e
 
                     cursor.execute("select id from distributor_trans where imdb_id = %s", (imdb_id, ))
@@ -170,7 +170,7 @@ def parse_movie(self, movie):
                 try:
                     cursor.execute(sql, (name.encode('utf-8'), imdb_id))
                 except IntegrityError as e:
-                    if e[0] != 1062:
+                    if e.orig[0] != 1062:
                         raise e
 
                     cursor.execute("select id from director_trans where imdb_id = %s", (imdb_id, ))
@@ -190,7 +190,7 @@ def parse_movie(self, movie):
                 try:
                     cursor.execute(sql, (name.encode('utf-8'), imdb_id))
                 except IntegrityError as e:
-                    if e[0] != 1062:
+                    if e.orig[0] != 1062:
                         raise e
 
                     cursor.execute("select id from actor_trans where imdb_id = %s", (imdb_id, ))
@@ -227,7 +227,7 @@ def parse_tv(self, tv):
             try:
                 cursor.execute(sql, season_data)
             except IntegrityError as e:
-                if e[0] != 1062:
+                if e.orig[0] != 1062:
                     raise e
 
                 _sql = """select id from tv_season
@@ -262,7 +262,7 @@ def parse_tv(self, tv):
                 try:
                     cursor.execute(sql, item)
                 except IntegrityError as e:
-                    if e[0] != 1062:
+                    if e.orig[0] != 1062:
                         raise e
                 finally:
                     n += 1
@@ -302,7 +302,7 @@ def parse_tv(self, tv):
         try:
             cursor.execute(sql, tv_data)
         except IntegrityError as e:
-            if e[0] != 1062:
+            if e.orig[0] != 1062:
                 raise e
 
             _sql = """update tv set
@@ -356,7 +356,7 @@ def parse_trailer(self, trailer):
             try:
                 cursor.execute(sql, t)
             except IntegrityError as e:
-                if e[0] != 1062:
+                if e.orig[0] != 1062:
                     raise e
             else:
                 # The link is Youtube video ID, put it into download queue.
@@ -372,7 +372,7 @@ def parse_trailer(self, trailer):
         try:
             cursor.execute(sql, trailer)
         except IntegrityError as e:
-            if e[0] != 1062:
+            if e.orig[0] != 1062:
                 raise e
 
             # Rating must up to date
@@ -497,7 +497,7 @@ def schedule():
             try:
                 cursor.execute(sql, (int(i), name))
             except IntegrityError as e:
-                if e[0] != 1062:
+                if e.orig[0] != 1062:
                     raise e
                 continue
 
