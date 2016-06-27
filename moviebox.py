@@ -15,9 +15,10 @@ import celery
 from celery.bin import worker
 from kombu import Queue
 import requests
-import MySQLdb
 import youtube_dl
 from lxml import html
+from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
 
 import settings
 
@@ -61,33 +62,15 @@ celery.platforms.C_FORCE_ROOT = True
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
            "Host": "sbfunapi.cc", "Connection": "Keep-Alive"}
 
-
-class Transaction(object):
-    _db = None
-
-    def __new__(cls):
-        if not cls._db:
-            cls._db = MySQLdb.connect(**settings.MYSQL_CONF)
-
-        return super(Transaction, cls).__new__(cls)
-
-    def __enter__(self):
-        self.cursor = self._db.cursor()
-        return self.cursor
-
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        if exc_type:
-            self._db.rollback()
-        else:
-            self._db.commit()
-
-        self.cursor.close()
+engine = create_engine("mysql://%(user)s:%(passwd)s@%(host)s/%(db)s" % settings.MYSQL_CONF,
+                       encoding='utf-8', echo=True)
 
 
 @app.task(bind=True, max_retries=10)
 def parse_movie(self, movie):
     try:
-        response = requests.get(MOVIE_DETAIL_URL % movie['id'], headers=headers)
+        response = requests.get(MOVIE_DETAIL_URL % movie['id'],
+                                headers=headers)
     except requests.ConnectionError, exc:
         raise self.retry(exc=exc, countdown=60)
     movie_data = response.json()
@@ -104,7 +87,8 @@ def parse_movie(self, movie):
         "Host": "www.imdb.com"
     }
     try:
-        response = requests.get(IMDB_PAGE_URL % movie['imdb_id'], headers=_headers)
+        response = requests.get(IMDB_PAGE_URL % movie['imdb_id'],
+                                headers=_headers)
     except requests.ConnectionError, exc:
         raise self.retry(exc=exc, countdown=60)
     root = html.fromstring(response.content)
@@ -118,7 +102,7 @@ def parse_movie(self, movie):
     except:
         movie_data['play_time'] = None
 
-    with Transaction() as cursor:
+    with engine.begin() as cursor:
         sql = "insert into movie( \
                  id, title, description, year, \
                  poster, rating, imdb_id, imdb_rating, \
@@ -132,7 +116,7 @@ def parse_movie(self, movie):
 
         try:
             cursor.execute(sql, movie_data)
-        except MySQLdb.IntegrityError as e:
+        except IntegrityError as e:
             if e[0] != 1062:
                 raise e
 
@@ -164,7 +148,7 @@ def parse_movie(self, movie):
                 sql = "insert into distributor_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, (name.encode('utf-8'), imdb_id))
-                except MySQLdb.IntegrityError as e:
+                except IntegrityError as e:
                     if e[0] != 1062:
                         raise e
 
@@ -184,7 +168,7 @@ def parse_movie(self, movie):
                 sql = "insert into director_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, (name.encode('utf-8'), imdb_id))
-                except MySQLdb.IntegrityError as e:
+                except IntegrityError as e:
                     if e[0] != 1062:
                         raise e
 
@@ -204,7 +188,7 @@ def parse_movie(self, movie):
                 sql = "insert into actor_trans(name, imdb_id) values(%s, %s)"
                 try:
                     cursor.execute(sql, (name.encode('utf-8'), imdb_id))
-                except MySQLdb.IntegrityError as e:
+                except IntegrityError as e:
                     if e[0] != 1062:
                         raise e
 
@@ -219,7 +203,7 @@ def parse_movie(self, movie):
 
 @app.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
-    with Transaction() as cursor:
+    with engine.begin() as cursor:
         for i in range(1, int(tv.get('seasons', 0))+1):
             try:
                 response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
@@ -241,7 +225,7 @@ def parse_tv(self, tv):
                   """
             try:
                 cursor.execute(sql, season_data)
-            except MySQLdb.IntegrityError as e:
+            except IntegrityError as e:
                 if e[0] != 1062:
                     raise e
 
@@ -276,7 +260,7 @@ def parse_tv(self, tv):
 
                 try:
                     cursor.execute(sql, item)
-                except MySQLdb.IntegrityError as e:
+                except IntegrityError as e:
                     if e[0] != 1062:
                         raise e
                 finally:
@@ -316,7 +300,7 @@ def parse_tv(self, tv):
               """
         try:
             cursor.execute(sql, tv_data)
-        except MySQLdb.IntegrityError as e:
+        except IntegrityError as e:
             if e[0] != 1062:
                 raise e
 
@@ -361,7 +345,7 @@ def parse_trailer(self, trailer):
         except:
             trailer_data['release_time'] = None
 
-    with Transaction() as cursor:
+    with engine.begin() as cursor:
         for t in trailer_data['trailers']:
             t['trailer_id'] = trailer['id']
             vid = t['link']
@@ -370,7 +354,7 @@ def parse_trailer(self, trailer):
                        values(%(id)s, %(trailer_id)s, %(date)s, %(link)s)"""
             try:
                 cursor.execute(sql, t)
-            except MySQLdb.IntegrityError as e:
+            except IntegrityError as e:
                 if e[0] != 1062:
                     raise e
             else:
@@ -386,7 +370,7 @@ def parse_trailer(self, trailer):
         trailer.update(trailer_data)
         try:
             cursor.execute(sql, trailer)
-        except MySQLdb.IntegrityError as e:
+        except IntegrityError as e:
             if e[0] != 1062:
                 raise e
 
@@ -430,12 +414,13 @@ def download_video(self, vid):
     return vid, response.content
 
 
+# download trailer info and video from IMDB.COM
 @app.task(bind=True, max_retries=10)
-def download_imdb_trailer(self, imdb_id):
+def download_imdb_trailer(self, movie_id):
     """Download Video from imdb.com"""
     try:
-        with Transaction() as cursor:
-            response = requests.get(IMDB_TRAILER_URL % imdb_id)
+        with engine.begin() as cursor:
+            response = requests.get(IMDB_TRAILER_URL % movie_id)
             root = html.fromstring(response.content)
             for a in root.xpath("//div[@class='search-results']/ol/li/div/a"):
                 vid = a.xpath("./@data-video")[0]
@@ -454,15 +439,17 @@ def download_imdb_trailer(self, imdb_id):
                         break
 
                 response = requests.get(video_url)
-                filename = u"%s/%s.mp4" % (imdb_id, vid)
+                filename = u"%s/%s.mp4" % (movie_id, vid)
                 files = [('file', (filename, StringIO.StringIO(response.content))), ]
                 response = requests.post("http://61.155.215.52:3000/upload",
                                          files=files)
                 if response.content != 'ok':
                     raise Exception("Upload failure!")
 
-                sql = """insert into trailer_source
+                sql = """insert into trailer_source(movie_id, imdb_id, create_date, link)
+                         values(%(movie_id)s, %(imdb_id)s, %(date)s, %(link)s)
                       """
+                data = {'movie_id': imdb_id, 'imdb_id': vid, 'create_date': ''}
                 cursor.execute(sql, data)
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
@@ -503,12 +490,12 @@ def schedule():
 
     # Save category names
     cates = json.loads(zf.read('cats.json'))
-    with Transaction() as cursor:
+    with engine.begin() as cursor:
         for i, name in cates.items():
             sql = "insert into category_trans(id, text_name) values(%s, %s)"
             try:
                 cursor.execute(sql, (int(i), name))
-            except MySQLdb.IntegrityError as e:
+            except IntegrityError as e:
                 if e[0] != 1062:
                     raise e
                 continue
