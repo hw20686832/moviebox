@@ -229,7 +229,8 @@ def parse_tv(self, tv):
 
         sql = """insert into tv_season(
                    tv_id, banner, description, seq)
-                 values(%(tv_id)s, %(banner)s, %(description)s, %(seq)s)
+                 values(
+                   %(tv_id)s, %(banner)s, %(description)s, %(seq)s)
               """
         try:
             _rs = session.execute(sql, season_data)
