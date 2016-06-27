@@ -66,7 +66,7 @@ headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
 
 engine = create_engine(
     u"mysql://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db)s" % settings.MYSQL_CONF,
-    encoding='utf-8'
+    pool_size=21, encoding='utf-8'
 )
 
 Session = sessionmaker(bind=engine)
