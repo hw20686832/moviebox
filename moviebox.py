@@ -14,6 +14,7 @@ import datetime
 import celery
 from celery.bin import worker
 from kombu import Queue
+
 import requests
 import youtube_dl
 from lxml import html
@@ -62,7 +63,7 @@ celery.platforms.C_FORCE_ROOT = True
 headers = {"User-Agent": "Show Box", "Accept-Encoding": "gzip",
            "Host": "sbfunapi.cc", "Connection": "Keep-Alive"}
 
-engine = create_engine("mysql://%(user)s:%(passwd)s@%(host)s/%(db)s" % settings.MYSQL_CONF,
+engine = create_engine(u"mysql://%(user)s:%(passwd)s@%(host)s:%(port)d/%(db)s" % settings.MYSQL_CONF,
                        encoding='utf-8', echo=True)
 
 
