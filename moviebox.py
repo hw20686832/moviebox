@@ -292,12 +292,12 @@ def parse_tv(self, tv):
                                 headers=headers)
     except requests.ConnectionError, exc:
         raise self.retry(exc=exc, countdown=60)
-        root = html.fromstring(response.content)
-        try:
-            release_date = root.xpath("//div[@id='titleDetails']/div/h4[text()='Release Date:']/following-sibling::text()")[0]
-            tv_data['release_time'] = datetime.datetime.strptime(re.sub("\(.*\)", '', release_date).strip(), '%d %B %Y')
-        except:
-            tv_data['release_time'] = None
+    root = html.fromstring(response.content)
+    try:
+        release_date = root.xpath("//div[@id='titleDetails']/div/h4[text()='Release Date:']/following-sibling::text()")[0]
+        tv_data['release_time'] = datetime.datetime.strptime(re.sub("\(.*\)", '', release_date).strip(), '%d %B %Y')
+    except:
+        tv_data['release_time'] = None
 
     sql = """insert into tv(
                id, title, description, poster, rating,
