@@ -75,6 +75,7 @@ session = Session()
 
 @app.task(bind=True, max_retries=10)
 def parse_movie(self, movie):
+    log = self.get_logger()
     #session = Session()
     try:
         response = requests.get(MOVIE_DETAIL_URL % movie['id'],
@@ -241,6 +242,7 @@ def parse_movie(self, movie):
 
 @app.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
+    log = self.get_logger()
     #session = Session()
 
     for i in range(1, int(tv.get('seasons', 0))+1):
@@ -319,7 +321,7 @@ def parse_tv(self, tv):
     tv_data['is_deleted'] = not bool(int(tv.get('active')))
 
     try:
-        self.log.error("Error imdb page: %s" % tv['imdb_id'])
+        log.error("Error imdb page: %s" % tv['imdb_id'])
         response = requests.get(IMDB_PAGE_URL % tv['imdb_id'],
                                 headers=headers)
     except requests.ConnectionError, exc:
