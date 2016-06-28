@@ -449,12 +449,12 @@ def parse_trailer(self, trailer):
 def download_video(self, vid):
     """Download Video from youtube"""
     opts = {
-        'format': 'mp4',
-        'outtmpl': u"tmp/:id.:ext",
+        u'format': u'mp4',
+        u'outtmpl': u"tmp/%(id)s.%(ext)s",
     }
     try:
         with youtube_dl.YoutubeDL(opts) as ydl:
-            ydl.download(['http://www.youtube.com/watch?v=%s' % vid, ])
+            ydl.download([u'http://www.youtube.com/watch?v=%s' % vid, ])
 
         files = [('file', (u"%s.mp4" % vid, open(u"tmp/%s.mp4" % vid, 'rb')))]
         response = requests.post("http://61.155.215.52:3000/upload",
