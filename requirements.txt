@@ -4,3 +4,4 @@ youtube_dl
 requests
 lxml
 redis
+sqlalchemy
