@@ -78,7 +78,6 @@ session = Session()
 
 @app.task(bind=True, max_retries=10)
 def parse_movie(self, movie):
-    #session = Session()
     try:
         response = requests.get(MOVIE_DETAIL_URL % movie['id'],
                                 headers=headers)
@@ -244,8 +243,6 @@ def parse_movie(self, movie):
 
 @app.task(bind=True, max_retries=10)
 def parse_tv(self, tv):
-    #session = Session()
-
     for i in range(1, int(tv.get('seasons', 0))+1):
         try:
             response = requests.get(TV_DETAIL_URL % (str(i), tv['id']),
@@ -324,7 +321,9 @@ def parse_tv(self, tv):
     try:
         response = requests.get(IMDB_PAGE_URL % tv['imdb_id'],
                                 headers=headers)
-    except requests.ConnectionError, exc:
+    except (requests.ConnectionError, requests.TooManyRedirects) as exc:
+        if isinstance(exc, requests.TooManyRedirects):
+            logger.error("Redirect error : %s" % tv['imdb_id'])
         raise self.retry(exc=exc, countdown=60)
     except:
         logger.error("Error imdb page: %s" % tv['imdb_id'])
@@ -374,8 +373,6 @@ def parse_tv(self, tv):
 
 @app.task(bind=True, max_retries=10)
 def parse_trailer(self, trailer):
-    #session = Session()
-
     headers = {"Host": "sbfunapi.cc",
                "Connection": "keep-alive",
                "Accept": "*/*",
